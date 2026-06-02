@@ -30,7 +30,10 @@
                         "En edición" => "estado-edicion",
                         "En revisión" => "estado-revision",
                         "Por corregir" => "estado-corregir",
-                        "Aprobado" => "estado-aprobado",
+                        "Aprobado por Director" => "estado-aprobado",
+                        "En validación académica" => "estado-revision",
+                        "Observado" => "estado-corregir",
+                        "Aprobado Final" => "estado-aprobado",
                         _ => "estado-default"
                     };
                 }
@@ -45,14 +48,21 @@
         <div class="alert-success-custom mb-4">@TempData["Exito"]</div>
     }
 
-    <!-- Switch for allowing new updates when Approved -->
-    @if (Model.Estado == "Aprobado")
+    <!-- Switch for allowing new updates when Approved by Director or Observed -->
+    @if (Model.Estado == "Aprobado por Director" || Model.Estado == "Observado")
     {
         <div class="info-card mb-4 p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
                 <h4 class="mb-1" style="font-weight: 700; color: var(--usmp-charcoal);">Reapertura de Edición</h4>
                 <p class="text-muted mb-0" style="font-size:0.9rem;">
-                    Habilita la edición de este sílabo aprobado. Al hacerlo, el sílabo volverá al estado "En edición" para que el docente pueda realizar cambios y volver a enviarlo a revisión.
+                    @if (Model.Estado == "Aprobado por Director")
+                    {
+                        <span>El sílabo ya fue aprobado por el Director y está pendiente de validación académica. Puedes devolver la edición al docente si detectas alguna observación antes de ese paso.</span>
+                    }
+                    else
+                    {
+                        <span>El Departamento Académico observó el sílabo. Puedes devolver la edición al docente para que realice los ajustes necesarios.</span>
+                    }
                 </p>
             </div>
             <form asp-controller="Silabos" asp-action="TogglePermisoEdicion" method="post">

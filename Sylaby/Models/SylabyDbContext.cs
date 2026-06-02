@@ -16,6 +16,7 @@ namespace Sylaby.Models
         public DbSet<PropuestaMejora> PropuestasMejora { get; set; }
         public DbSet<ObservacionDirector> ObservacionesDirector { get; set; }
         public DbSet<BitacoraAccion> BitacoraAcciones { get; set; }
+        public DbSet<ValidacionAcademica> ValidacionesAcademicas { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -88,6 +89,20 @@ namespace Sylaby.Models
                 .WithMany(s => s.Bitacora)
                 .HasForeignKey(b => b.SilaboId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // ValidacionAcademica → Silabo
+            modelBuilder.Entity<ValidacionAcademica>()
+                .HasOne(v => v.Silabo)
+                .WithMany(s => s.ValidacionesAcademicas)
+                .HasForeignKey(v => v.SilaboId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ValidacionAcademica → Revisor (no cascade)
+            modelBuilder.Entity<ValidacionAcademica>()
+                .HasOne(v => v.Revisor)
+                .WithMany()
+                .HasForeignKey(v => v.RevisorId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

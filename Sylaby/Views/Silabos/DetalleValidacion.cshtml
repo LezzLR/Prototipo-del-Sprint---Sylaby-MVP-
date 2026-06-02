@@ -1,0 +1,439 @@
+@model Sylaby.Models.Silabo
+@{
+    ViewData["Title"] = "Validación Académica — " + Model.Curso?.Nombre;
+
+    var ultimaValidacion = Model.ValidacionesAcademicas.OrderByDescending(v => v.Fecha).FirstOrDefault();
+    bool esReadOnly = Model.Estado == "Aprobado Final";
+    bool puedeValidar = Model.Estado == "En validación académica" || Model.Estado == "Observado";
+
+    var checkItems = new[]
+    {
+        ("datosGeneralesConforme", "datosGeneralesComentario", "Datos Generales"),
+        ("sumillaConforme", "sumillaComentario", "Sumilla"),
+        ("competenciasConforme", "competenciasComentario", "Competencias"),
+        ("capacidadesConforme", "capacidadesComentario", "Capacidades"),
+        ("contenidosConforme", "contenidosComentario", "Contenidos"),
+        ("estrategiasConforme", "estrategiasComentario", "Estrategias Didácticas"),
+        ("evaluacionConforme", "evaluacionComentario", "Sistema de Evaluación"),
+        ("bibliografiaConforme", "bibliografiaComentario", "Bibliografía"),
+    };
+}
+
+<div class="dashboard-container" style="max-width: 1100px;">
+
+    <!-- Breadcrumb -->
+    <a asp-controller="Silabos" asp-action="ValidacionIndex" class="d-inline-flex align-items-center gap-2 mb-4 text-decoration-none" style="color: var(--usmp-red); font-weight: 600;">
+        Volver a Validación Académica
+    </a>
+
+    <!-- Header -->
+    <div class="silabo-editor-header mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <span class="dashboard-tag bg-secondary text-white">Departamento Académico</span>
+                <h1 class="silabo-editor-title">@Model.Curso?.Nombre</h1>
+                <p class="silabo-editor-sub">
+                    Docente: <strong>@Model.DocenteResponsable</strong> &nbsp;|&nbsp;
+                    Aprobado por Director: <strong>@(string.IsNullOrEmpty(Model.AprobadoPor) ? "—" : Model.AprobadoPor)</strong>
+                    @if (Model.FechaAprobacion.HasValue)
+                    {
+                        <span>&nbsp;el <strong>@Model.FechaAprobacion.Value.ToString("dd/MM/yyyy")</strong></span>
+                    }
+                </p>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-2">
+                @{
+                    string estadoClass = Model.Estado switch
+                    {
+                        "Aprobado por Director" => "estado-revision",
+                        "En validación académica" => "estado-revision",
+                        "Observado" => "estado-corregir",
+                        "Aprobado Final" => "estado-aprobado",
+                        _ => "estado-default"
+                    };
+                }
+                <span class="estado-badge @estadoClass fs-6 px-3 py-2">@Model.Estado</span>
+                <small class="text-muted">Última modificación: @Model.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert-success-custom mb-4">@TempData["Exito"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-error-custom mb-4">@TempData["Error"]</div>
+    }
+
+    @if (esReadOnly)
+    {
+        <div class="info-card mb-4 p-4 d-flex justify-content-between align-items-center flex-wrap gap-3" style="border-left: 4px solid #22c55e; background: rgba(34,197,94,0.06);">
+            <div>
+                <h4 style="color: #15803d; font-weight: 700; margin-bottom: 4px;">Sílabo Aprobado Definitivamente</h4>
+                <p class="mb-0 text-muted" style="font-size:0.9rem;">
+                    Validado por <strong>@Model.ValidadoPor</strong> el <strong>@(Model.FechaValidacion?.ToString("dd/MM/yyyy HH:mm"))</strong>.
+                    Este sílabo ha completado el proceso de validación institucional.
+                </p>
+            </div>
+            <form asp-action="ReabrirEdicionRevisor" method="post" onsubmit="return confirm('¿Está seguro de habilitar la edición? El sílabo regresará al inicio (En edición).');">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-outline-success">
+                    Habilitar Edición
+                </button>
+            </form>
+        </div>
+    }
+
+    <!-- Historial de validaciones previas -->
+    @if (Model.ValidacionesAcademicas.Any())
+    {
+        <div class="propuestas-section mb-4">
+            <div class="propuestas-header">
+                <h3 class="propuestas-title">Historial de Validaciones</h3>
+                <span class="propuestas-count">@Model.ValidacionesAcademicas.Count revisión(es)</span>
+            </div>
+            <div class="mt-3">
+                @foreach (var val in Model.ValidacionesAcademicas.OrderByDescending(v => v.Fecha))
+                {
+                    <div class="info-card p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>@val.RevisorEmail</strong>
+                                <span class="text-muted ms-2" style="font-size:0.85rem;">@val.Fecha.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                            <span class="status-badge @(val.Resultado == "Aprobado Final" ? "badge-aprobado" : "badge-corregir")">
+                                @val.Resultado
+                            </span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(val.ObservacionGeneral))
+                        {
+                            <p class="mb-2" style="font-size:0.9rem;"><strong>Observación general:</strong> @val.ObservacionGeneral</p>
+                        }
+                        <div class="row g-2" style="font-size:0.85rem;">
+                            @{
+                                var items = new[]
+                                {
+                                    ("Datos Generales", val.DatosGeneralesConforme, val.DatosGeneralesComentario),
+                                    ("Sumilla", val.SumillaConforme, val.SumillaComentario),
+                                    ("Competencias", val.CompetenciasConforme, val.CompetenciasComentario),
+                                    ("Capacidades", val.CapacidadesConforme, val.CapacidadesComentario),
+                                    ("Contenidos", val.ContenidosConforme, val.ContenidosComentario),
+                                    ("Estrategias", val.EstrategiasConforme, val.EstrategiasComentario),
+                                    ("Evaluación", val.EvaluacionConforme, val.EvaluacionComentario),
+                                    ("Bibliografía", val.BibliografiaConforme, val.BibliografiaComentario),
+                                };
+                            }
+                            @foreach (var (nombre, conforme, comentario) in items)
+                            {
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-start gap-2 p-2 rounded" style="background: @(conforme ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.06)"); border: 1px solid @(conforme ? "rgba(34,197,94,0.2)" : "rgba(239,68,68,0.2)");">
+                                        <span style="font-size:1rem; color: @(conforme ? "#15803d" : "#dc2626");">@(conforme ? "✓" : "✗")</span>
+                                        <div>
+                                            <strong>@nombre</strong>: <span style="color:@(conforme ? "#15803d" : "#dc2626")">@(conforme ? "Conforme" : "No conforme")</span>
+                                            @if (!string.IsNullOrEmpty(comentario))
+                                            {
+                                                <div class="text-muted">@comentario</div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Main layout: Syllabus + Checklist -->
+    <form id="formValidacion" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="row">
+            <!-- Left: Syllabus content read-only -->
+            <div class="col-lg-7">
+                <div class="info-card p-4">
+                    <h3 class="card-title-custom mb-3">Contenido del Sílabo</h3>
+
+                    <ul class="silabo-tabs mb-0" id="silaboTabs" role="tablist">
+                        <li><button type="button" class="silabo-tab active" data-target="tab-generales">Datos Generales</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-sumilla">Sumilla</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-comp">Competencias</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-contenidos">Contenidos</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-estrategias">Estrategias</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-evaluacion">Evaluación</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-biblio">Bibliografía</button></li>
+                    </ul>
+
+                    <div class="silabo-tab-content">
+                        <div class="silabo-tab-panel active" id="tab-generales">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label-custom">Escuela Profesional</label>
+                                    <input type="text" class="form-control-custom" value="@Model.EscuelaProfesional" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-custom">Ciclo Académico</label>
+                                    <input type="text" class="form-control-custom" value="@Model.CicloAcademico" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-custom">Créditos</label>
+                                    <input type="text" class="form-control-custom" value="@Model.Creditos" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-custom">Horas Semanales</label>
+                                    <input type="text" class="form-control-custom" value="@Model.HorasSemanales" readonly />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label-custom">Docente Responsable</label>
+                                    <input type="text" class="form-control-custom" value="@Model.DocenteResponsable" readonly />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="silabo-tab-panel" id="tab-sumilla">
+                            <label class="form-label-custom">Sumilla</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.Sumilla</div>
+                        </div>
+
+                        <div class="silabo-tab-panel" id="tab-comp">
+                            <label class="form-label-custom">Competencias</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap mb-3">@Model.Competencias</div>
+                            <label class="form-label-custom">Capacidades</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.Capacidades</div>
+                        </div>
+
+                        <div class="silabo-tab-panel" id="tab-contenidos">
+                            <label class="form-label-custom">Programación de Contenidos por Unidades</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.ProgramacionContenidos</div>
+                        </div>
+
+                        <div class="silabo-tab-panel" id="tab-estrategias">
+                            <label class="form-label-custom">Estrategias Didácticas</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.EstrategiasDiddacticas</div>
+                        </div>
+
+                        <div class="silabo-tab-panel" id="tab-evaluacion">
+                            <label class="form-label-custom">Sistema de Evaluación</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.SistemaEvaluacion</div>
+                        </div>
+
+                        <div class="silabo-tab-panel" id="tab-biblio">
+                            <label class="form-label-custom">Bibliografía</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.Bibliografia</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proposals from Docente -->
+                @if (Model.Propuestas.Any())
+                {
+                    <div class="propuestas-section mt-4">
+                        <div class="propuestas-header">
+                            <h3 class="propuestas-title">Propuestas de Mejora del Docente</h3>
+                            <span class="propuestas-count">@Model.Propuestas.Count</span>
+                        </div>
+                        <div class="propuestas-lista mt-3">
+                            @foreach (var prop in Model.Propuestas.OrderByDescending(p => p.Fecha))
+                            {
+                                <div class="propuesta-item">
+                                    <div class="propuesta-item-header">
+                                        <span class="propuesta-seccion">@prop.SeccionAfectada</span>
+                                        <small class="text-muted">@prop.Fecha.ToString("dd/MM/yyyy") @prop.Hora</small>
+                                    </div>
+                                    <p class="propuesta-texto"><strong>Cambio Propuesto:</strong> @prop.PropuestaActualizacion</p>
+                                    <p class="propuesta-justificacion"><strong>Justificación:</strong> @prop.Justificacion</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Right: Checklist -->
+            <div class="col-lg-5">
+                <div class="info-card p-4 sticky-top" style="top: 2rem; z-index: 100;">
+                    <h3 class="card-title-custom mb-1">Lista de Verificación Institucional</h3>
+                    <p class="text-muted mb-4" style="font-size:0.85rem;">
+                        Marque cada sección como <strong>Conforme</strong> o <strong>No conforme</strong>.
+                        Los ítems marcados como "No conforme" requieren comentario obligatorio.
+                    </p>
+
+                    @if (puedeValidar)
+                    {
+                        <!-- Checklist Items -->
+                        <div class="mb-4" id="checklistItems">
+                            @foreach (var (checkName, commentName, label) in checkItems)
+                            {
+                                <div class="checklist-item mb-3" data-check="@checkName">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="fw-semibold" style="font-size:0.9rem;">@label</span>
+                                        <div class="d-flex gap-2">
+                                            <label class="checklist-radio conforme-label">
+                                                <input type="radio" name="@checkName" value="true" class="conforme-radio" checked />
+                                                <span>Conforme</span>
+                                            </label>
+                                            <label class="checklist-radio no-conforme-label">
+                                                <input type="radio" name="@checkName" value="false" class="no-conforme-radio" />
+                                                <span>No conforme</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="comentario-container" style="display:none;">
+                                        <textarea name="@commentName" class="form-control-custom"
+                                                  rows="2" placeholder="Comentario obligatorio para No conforme..."></textarea>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label-custom">Observación General (opcional)</label>
+                            <textarea name="observacionGeneral" class="form-control-custom" rows="3"
+                                      placeholder="Comentario general sobre el sílabo..."></textarea>
+                        </div>
+
+                        <div class="d-flex flex-column gap-2">
+                            <button type="submit" id="btnAprobar" formaction="@Url.Action("AprobarFinal")"
+                                    class="btn btn-usmp-primary w-100 py-2">
+                                Aprobar Definitivamente
+                            </button>
+                            <button type="submit" id="btnObservar" formaction="@Url.Action("ObservarSilabo")"
+                                    class="btn btn-usmp-danger w-100 py-2">
+                                Observar Sílabo
+                            </button>
+                        </div>
+                    }
+                    else if (esReadOnly)
+                    {
+                        <div class="p-3 rounded text-center" style="background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.3);">
+                            <p class="mb-0" style="color: #15803d; font-weight: 600;">
+                                Validación completada
+                            </p>
+                            <p class="mb-0 text-muted" style="font-size:0.85rem;">
+                                Aprobado el @(Model.FechaValidacion?.ToString("dd/MM/yyyy HH:mm"))
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-3 bg-light rounded text-center">
+                            <p class="mb-0 text-muted" style="font-size:0.9rem;">
+                                El sílabo está en estado: <strong>@Model.Estado</strong>.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Bitácora -->
+    <div class="propuestas-section mt-5">
+        <div class="propuestas-header">
+            <h3 class="propuestas-title">Historial Completo de Cambios</h3>
+            <span class="propuestas-count">@Model.Bitacora.Count registro(s)</span>
+        </div>
+        <div class="silabo-tabla-wrapper mt-3">
+            <table class="silabo-tabla" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Acción Realizada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Bitacora.OrderByDescending(b => b.Fecha))
+                    {
+                        <tr>
+                            <td>@log.Fecha.ToString("dd/MM/yyyy") @log.Hora</td>
+                            <td>@log.Usuario</td>
+                            <td>@log.Rol</td>
+                            <td><strong>@log.Accion</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+    // Tab switching
+    document.querySelectorAll('.silabo-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.silabo-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.silabo-tab-panel').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById(this.dataset.target).classList.add('active');
+        });
+    });
+
+    // Checklist: show/hide comment box on No Conforme
+    document.querySelectorAll('.checklist-item').forEach(item => {
+        const radios = item.querySelectorAll('input[type="radio"]');
+        const comentarioBox = item.querySelector('.comentario-container');
+
+        radios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                if (this.value === 'false') {
+                    comentarioBox.style.display = 'block';
+                    comentarioBox.querySelector('textarea').setAttribute('required', 'required');
+                } else {
+                    comentarioBox.style.display = 'none';
+                    comentarioBox.querySelector('textarea').removeAttribute('required');
+                    comentarioBox.querySelector('textarea').value = '';
+                }
+            });
+        });
+    });
+
+    // Validate before submitting Aprobar: warn if any No Conforme found
+    document.getElementById('btnAprobar')?.addEventListener('click', function (e) {
+        const noConformes = [...document.querySelectorAll('input[type="radio"][value="false"]:checked')];
+        if (noConformes.length > 0) {
+            if (!confirm('Hay ' + noConformes.length + ' sección(es) marcadas como "No conforme". ¿Deseas aprobar definitivamente de todos modos?')) {
+                e.preventDefault();
+            }
+        }
+    });
+</script>
+
+<style>
+    .checklist-radio {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 500;
+        padding: 3px 8px;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        transition: all 0.15s;
+    }
+    .checklist-radio:has(input:checked).conforme-label {
+        background: rgba(34,197,94,0.1);
+        border-color: rgba(34,197,94,0.4);
+        color: #15803d;
+    }
+    .checklist-radio:has(input:checked).no-conforme-label {
+        background: rgba(239,68,68,0.1);
+        border-color: rgba(239,68,68,0.4);
+        color: #dc2626;
+    }
+    .checklist-radio input[type="radio"] { display: none; }
+    .checklist-item { border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+    .checklist-item:last-child { border-bottom: none; }
+    .comentario-container textarea { margin-top: 6px; }
+</style>
+}

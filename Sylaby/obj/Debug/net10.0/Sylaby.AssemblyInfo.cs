@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Sylaby")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e22be5b7b2f77b68ef2ba9cf22581fcb96ce12f8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+75deeeba375f1f7f3630a8663672b677fbdb7743")]
 [assembly: System.Reflection.AssemblyProductAttribute("Sylaby")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Sylaby")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -69,7 +69,8 @@ namespace Sylaby.Controllers
             if (silabo == null) return NotFound();
 
             // Prevent editing if locked states
-            if (silabo.Estado == "En revisión" || (silabo.Estado == "Aprobado" && !silabo.PermiteNuevasPropuestas))
+            var estadosBloqueados = new[] { "En revisión", "Aprobado por Director", "En validación académica", "Aprobado Final" };
+            if (estadosBloqueados.Contains(silabo.Estado))
             {
                 TempData["Error"] = "El sílabo no puede editarse en su estado actual.";
                 return RedirectToAction("Editor", new { id = silabo.Id });
@@ -223,6 +224,7 @@ namespace Sylaby.Controllers
             silabo.FechaEnvio = DateTime.Now;
             silabo.FechaModificacion = DateTime.Now;
             silabo.ModificadoPor = email!;
+            silabo.PermiteNuevasPropuestas = false;
 
             _context.BitacoraAcciones.Add(new BitacoraAccion
             {
@@ -303,7 +305,7 @@ namespace Sylaby.Controllers
             await GuardarObservaciones(id, director, comentarioGeneral, obsGenerales, obsSumilla,
                 obsCompetencias, obsCapacidades, obsContenidos, obsEstrategias, obsEvaluacion, obsBibliografia);
 
-            silabo.Estado = "Aprobado";
+            silabo.Estado = "Aprobado por Director";
             silabo.FechaAprobacion = DateTime.Now;
             silabo.AprobadoPor = email!;
             silabo.FechaModificacion = DateTime.Now;
@@ -315,13 +317,13 @@ namespace Sylaby.Controllers
                 CursoId = silabo.CursoId,
                 Usuario = email!,
                 Rol = "Director",
-                Accion = "Sílabo aprobado",
+                Accion = "Sílabo aprobado por Director — pendiente de validación académica",
                 Fecha = DateTime.Now,
                 Hora = DateTime.Now.ToString("HH:mm")
             });
 
             await _context.SaveChangesAsync();
-            TempData["Exito"] = "Sílabo aprobado exitosamente.";
+            TempData["Exito"] = "Sílabo aprobado. Pasa a validación del Departamento Académico.";
             return RedirectToAction("DirectorIndex");
         }
 
@@ -391,6 +393,336 @@ namespace Sylaby.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction("Detalle", new { id });
+        }
+
+        // ────────────────────────────────────────────────────────────────────────
+        // REVISOR ACADÉMICO VIEWS
+        // ────────────────────────────────────────────────────────────────────────
+
+        [Authorize(Roles = "RevisorAcademico")]
+        public async Task<IActionResult> ValidacionIndex(string? filtroCurso, string? filtroDocente, string? filtroEstado)
+        {
+            var query = _context.Silabos
+                .Include(s => s.Curso)
+                    .ThenInclude(c => c!.Docente)
+                .Where(s => s.Estado == "Aprobado por Director"
+                         || s.Estado == "En validación académica"
+                         || s.Estado == "Observado"
+                         || s.Estado == "Aprobado Final")
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(filtroCurso))
+                query = query.Where(s => s.Curso!.Nombre.Contains(filtroCurso));
+
+            if (!string.IsNullOrEmpty(filtroDocente))
+                query = query.Where(s => s.DocenteResponsable.Contains(filtroDocente));
+
+            if (!string.IsNullOrEmpty(filtroEstado))
+                query = query.Where(s => s.Estado == filtroEstado);
+
+            ViewBag.FiltroCurso = filtroCurso;
+            ViewBag.FiltroDocente = filtroDocente;
+            ViewBag.FiltroEstado = filtroEstado;
+
+            var silabos = await query.OrderByDescending(s => s.FechaAprobacion).ToListAsync();
+            return View(silabos);
+        }
+
+        [Authorize(Roles = "RevisorAcademico")]
+        public async Task<IActionResult> DetalleValidacion(int id)
+        {
+            var silabo = await _context.Silabos
+                .Include(s => s.Curso)
+                    .ThenInclude(c => c!.Docente)
+                .Include(s => s.Propuestas)
+                .Include(s => s.Observaciones)
+                .Include(s => s.Bitacora)
+                .Include(s => s.ValidacionesAcademicas)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (silabo == null) return NotFound();
+
+            // Mark as "En validación académica" once the revisor opens it
+            if (silabo.Estado == "Aprobado por Director")
+            {
+                var emailRev = User.FindFirstValue(ClaimTypes.Name);
+                silabo.Estado = "En validación académica";
+                silabo.FechaModificacion = DateTime.Now;
+
+                _context.BitacoraAcciones.Add(new BitacoraAccion
+                {
+                    SilaboId = silabo.Id,
+                    CursoId = silabo.CursoId,
+                    Usuario = emailRev!,
+                    Rol = "RevisorAcademico",
+                    Accion = "Inicio de revisión académica",
+                    Fecha = DateTime.Now,
+                    Hora = DateTime.Now.ToString("HH:mm")
+                });
+
+                await _context.SaveChangesAsync();
+            }
+
+            return View(silabo);
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "RevisorAcademico")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AprobarFinal(int id,
+            bool datosGeneralesConforme, string? datosGeneralesComentario,
+            bool sumillaConforme, string? sumillaComentario,
+            bool competenciasConforme, string? competenciasComentario,
+            bool capacidadesConforme, string? capacidadesComentario,
+            bool contenidosConforme, string? contenidosComentario,
+            bool estrategiasConforme, string? estrategiasComentario,
+            bool evaluacionConforme, string? evaluacionComentario,
+            bool bibliografiaConforme, string? bibliografiaComentario,
+            string? observacionGeneral)
+        {
+            var email = User.FindFirstValue(ClaimTypes.Name);
+            var revisor = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (revisor == null) return Unauthorized();
+
+            var silabo = await _context.Silabos.FindAsync(id);
+            if (silabo == null) return NotFound();
+
+            // Validate: No Conforme items must have a comment
+            var errores = new List<string>();
+            if (!datosGeneralesConforme && string.IsNullOrWhiteSpace(datosGeneralesComentario)) errores.Add("Datos Generales");
+            if (!sumillaConforme && string.IsNullOrWhiteSpace(sumillaComentario)) errores.Add("Sumilla");
+            if (!competenciasConforme && string.IsNullOrWhiteSpace(competenciasComentario)) errores.Add("Competencias");
+            if (!capacidadesConforme && string.IsNullOrWhiteSpace(capacidadesComentario)) errores.Add("Capacidades");
+            if (!contenidosConforme && string.IsNullOrWhiteSpace(contenidosComentario)) errores.Add("Contenidos");
+            if (!estrategiasConforme && string.IsNullOrWhiteSpace(estrategiasComentario)) errores.Add("Estrategias");
+            if (!evaluacionConforme && string.IsNullOrWhiteSpace(evaluacionComentario)) errores.Add("Evaluación");
+            if (!bibliografiaConforme && string.IsNullOrWhiteSpace(bibliografiaComentario)) errores.Add("Bibliografía");
+
+            if (errores.Any())
+            {
+                TempData["Error"] = $"Debe agregar un comentario para las secciones 'No conforme': {string.Join(", ", errores)}.";
+                return RedirectToAction("DetalleValidacion", new { id });
+            }
+
+            _context.ValidacionesAcademicas.Add(new ValidacionAcademica
+            {
+                SilaboId = id,
+                RevisorId = revisor.Id,
+                RevisorEmail = email!,
+                DatosGeneralesConforme = datosGeneralesConforme,
+                DatosGeneralesComentario = datosGeneralesComentario,
+                SumillaConforme = sumillaConforme,
+                SumillaComentario = sumillaComentario,
+                CompetenciasConforme = competenciasConforme,
+                CompetenciasComentario = competenciasComentario,
+                CapacidadesConforme = capacidadesConforme,
+                CapacidadesComentario = capacidadesComentario,
+                ContenidosConforme = contenidosConforme,
+                ContenidosComentario = contenidosComentario,
+                EstrategiasConforme = estrategiasConforme,
+                EstrategiasComentario = estrategiasComentario,
+                EvaluacionConforme = evaluacionConforme,
+                EvaluacionComentario = evaluacionComentario,
+                BibliografiaConforme = bibliografiaConforme,
+                BibliografiaComentario = bibliografiaComentario,
+                Resultado = "Aprobado Final",
+                ObservacionGeneral = observacionGeneral,
+                Fecha = DateTime.Now,
+                Hora = DateTime.Now.ToString("HH:mm")
+            });
+
+            silabo.Estado = "Aprobado Final";
+            silabo.FechaValidacion = DateTime.Now;
+            silabo.ValidadoPor = email!;
+            silabo.FechaModificacion = DateTime.Now;
+
+            _context.BitacoraAcciones.Add(new BitacoraAccion
+            {
+                SilaboId = id,
+                CursoId = silabo.CursoId,
+                Usuario = email!,
+                Rol = "RevisorAcademico",
+                Accion = "Sílabo aprobado definitivamente por Departamento Académico",
+                Fecha = DateTime.Now,
+                Hora = DateTime.Now.ToString("HH:mm")
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["Exito"] = "Sílabo aprobado definitivamente. Proceso finalizado.";
+            return RedirectToAction("ValidacionIndex");
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "RevisorAcademico")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ObservarSilabo(int id,
+            bool datosGeneralesConforme, string? datosGeneralesComentario,
+            bool sumillaConforme, string? sumillaComentario,
+            bool competenciasConforme, string? competenciasComentario,
+            bool capacidadesConforme, string? capacidadesComentario,
+            bool contenidosConforme, string? contenidosComentario,
+            bool estrategiasConforme, string? estrategiasComentario,
+            bool evaluacionConforme, string? evaluacionComentario,
+            bool bibliografiaConforme, string? bibliografiaComentario,
+            string? observacionGeneral)
+        {
+            var email = User.FindFirstValue(ClaimTypes.Name);
+            var revisor = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (revisor == null) return Unauthorized();
+
+            var silabo = await _context.Silabos.FindAsync(id);
+            if (silabo == null) return NotFound();
+
+            // At least one section must be No Conforme
+            var noConformes = new List<string>();
+            if (!datosGeneralesConforme) noConformes.Add("Datos Generales");
+            if (!sumillaConforme) noConformes.Add("Sumilla");
+            if (!competenciasConforme) noConformes.Add("Competencias");
+            if (!capacidadesConforme) noConformes.Add("Capacidades");
+            if (!contenidosConforme) noConformes.Add("Contenidos");
+            if (!estrategiasConforme) noConformes.Add("Estrategias");
+            if (!evaluacionConforme) noConformes.Add("Evaluación");
+            if (!bibliografiaConforme) noConformes.Add("Bibliografía");
+
+            // Validate comments for No Conforme items
+            var errores = new List<string>();
+            if (!datosGeneralesConforme && string.IsNullOrWhiteSpace(datosGeneralesComentario)) errores.Add("Datos Generales");
+            if (!sumillaConforme && string.IsNullOrWhiteSpace(sumillaComentario)) errores.Add("Sumilla");
+            if (!competenciasConforme && string.IsNullOrWhiteSpace(competenciasComentario)) errores.Add("Competencias");
+            if (!capacidadesConforme && string.IsNullOrWhiteSpace(capacidadesComentario)) errores.Add("Capacidades");
+            if (!contenidosConforme && string.IsNullOrWhiteSpace(contenidosComentario)) errores.Add("Contenidos");
+            if (!estrategiasConforme && string.IsNullOrWhiteSpace(estrategiasComentario)) errores.Add("Estrategias");
+            if (!evaluacionConforme && string.IsNullOrWhiteSpace(evaluacionComentario)) errores.Add("Evaluación");
+            if (!bibliografiaConforme && string.IsNullOrWhiteSpace(bibliografiaComentario)) errores.Add("Bibliografía");
+
+            if (errores.Any())
+            {
+                TempData["Error"] = $"Debe agregar un comentario para las secciones 'No conforme': {string.Join(", ", errores)}.";
+                return RedirectToAction("DetalleValidacion", new { id });
+            }
+
+            _context.ValidacionesAcademicas.Add(new ValidacionAcademica
+            {
+                SilaboId = id,
+                RevisorId = revisor.Id,
+                RevisorEmail = email!,
+                DatosGeneralesConforme = datosGeneralesConforme,
+                DatosGeneralesComentario = datosGeneralesComentario,
+                SumillaConforme = sumillaConforme,
+                SumillaComentario = sumillaComentario,
+                CompetenciasConforme = competenciasConforme,
+                CompetenciasComentario = competenciasComentario,
+                CapacidadesConforme = capacidadesConforme,
+                CapacidadesComentario = capacidadesComentario,
+                ContenidosConforme = contenidosConforme,
+                ContenidosComentario = contenidosComentario,
+                EstrategiasConforme = estrategiasConforme,
+                EstrategiasComentario = estrategiasComentario,
+                EvaluacionConforme = evaluacionConforme,
+                EvaluacionComentario = evaluacionComentario,
+                BibliografiaConforme = bibliografiaConforme,
+                BibliografiaComentario = bibliografiaComentario,
+                Resultado = "Observado",
+                ObservacionGeneral = observacionGeneral,
+                Fecha = DateTime.Now,
+                Hora = DateTime.Now.ToString("HH:mm")
+            });
+
+            silabo.Estado = "Observado";
+            silabo.FechaModificacion = DateTime.Now;
+
+            _context.BitacoraAcciones.Add(new BitacoraAccion
+            {
+                SilaboId = id,
+                CursoId = silabo.CursoId,
+                Usuario = email!,
+                Rol = "RevisorAcademico",
+                Accion = $"Sílabo observado — secciones: {string.Join(", ", noConformes)}",
+                Fecha = DateTime.Now,
+                Hora = DateTime.Now.ToString("HH:mm")
+            });
+
+            await _context.SaveChangesAsync();
+            TempData["Exito"] = "Sílabo observado. El Director fue notificado para reabrir edición si es necesario.";
+            return RedirectToAction("ValidacionIndex");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "RevisorAcademico")]
+        public async Task<IActionResult> ReabrirEdicionRevisor(int id)
+        {
+            var email = User.FindFirstValue(ClaimTypes.Name);
+            var silabo = await _context.Silabos.FindAsync(id);
+
+            if (silabo == null) return NotFound();
+            
+            // Allow reopening if it's Aprobado Final
+            if (silabo.Estado == "Aprobado Final")
+            {
+                silabo.Estado = "En edición";
+                silabo.FechaModificacion = DateTime.Now;
+
+                _context.BitacoraAcciones.Add(new BitacoraAccion
+                {
+                    SilaboId = silabo.Id,
+                    CursoId = silabo.CursoId,
+                    Usuario = email ?? "Sistema",
+                    Rol = "RevisorAcademico",
+                    Accion = "Reapertura de edición habilitada (Estado reiniciado a 'En edición')",
+                    Fecha = DateTime.Now,
+                    Hora = DateTime.Now.ToString("HH:mm")
+                });
+
+                await _context.SaveChangesAsync();
+                TempData["Exito"] = "Edición habilitada correctamente. El sílabo ha regresado al estado 'En edición'.";
+            }
+            else
+            {
+                TempData["Error"] = "No se puede reabrir la edición de este sílabo porque no está en estado 'Aprobado Final'.";
+            }
+
+            return RedirectToAction("ValidacionIndex");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "RevisorAcademico")]
+        public async Task<IActionResult> ReabrirTodosRevisor()
+        {
+            var email = User.FindFirstValue(ClaimTypes.Name);
+            
+            var silabosAprobadosFinal = await _context.Silabos
+                .Where(s => s.Estado == "Aprobado Final")
+                .ToListAsync();
+
+            if (!silabosAprobadosFinal.Any())
+            {
+                TempData["Error"] = "No hay sílabos en estado 'Aprobado Final' para reabrir.";
+                return RedirectToAction("ValidacionIndex");
+            }
+
+            foreach (var silabo in silabosAprobadosFinal)
+            {
+                silabo.Estado = "En edición";
+                silabo.FechaModificacion = DateTime.Now;
+
+                _context.BitacoraAcciones.Add(new BitacoraAccion
+                {
+                    SilaboId = silabo.Id,
+                    CursoId = silabo.CursoId,
+                    Usuario = email ?? "Sistema",
+                    Rol = "RevisorAcademico",
+                    Accion = "Reapertura de edición masiva habilitada (Estado reiniciado a 'En edición')",
+                    Fecha = DateTime.Now,
+                    Hora = DateTime.Now.ToString("HH:mm")
+                });
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["Exito"] = $"Se han habilitado para edición {silabosAprobadosFinal.Count} sílabo(s).";
+            
+            return RedirectToAction("ValidacionIndex");
         }
 
         // ─────────────────────────────────────────────────────────────────────

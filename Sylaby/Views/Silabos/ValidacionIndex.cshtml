@@ -1,0 +1,138 @@
+@model List<Sylaby.Models.Silabo>
+@{
+    ViewData["Title"] = "Validación Académica";
+}
+
+<div class="page-header mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h1 class="page-title">Validación Académica</h1>
+        <p class="page-subtitle">Departamento Académico — Revisión institucional de sílabos</p>
+    </div>
+    @if (Model.Any(s => s.Estado == "Aprobado Final"))
+    {
+        <form asp-action="ReabrirTodosRevisor" method="post" onsubmit="return confirm('¿Está seguro de que desea reabrir la edición para TODOS los sílabos en estado Aprobado Final? Estos regresarán a En Edición.');">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-usmp-outline">
+                Reabrir Todos los Aprobados
+            </button>
+        </form>
+    }
+</div>
+
+@if (TempData["Exito"] != null)
+{
+    <div class="alert-success-custom mb-3">@TempData["Exito"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert-error-custom mb-3">@TempData["Error"]</div>
+}
+
+<!-- Filters -->
+<div class="filter-card mb-4">
+    <form method="get" class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label-custom" for="filtroCurso">Curso</label>
+            <input type="text" id="filtroCurso" name="filtroCurso" class="form-control form-control-custom"
+                   placeholder="Buscar por curso..." value="@ViewBag.FiltroCurso" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label-custom" for="filtroDocente">Docente</label>
+            <input type="text" id="filtroDocente" name="filtroDocente" class="form-control form-control-custom"
+                   placeholder="Correo del docente..." value="@ViewBag.FiltroDocente" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label-custom" for="filtroEstado">Estado</label>
+            <select id="filtroEstado" name="filtroEstado" class="form-select form-control-custom">
+                <option value="">Todos</option>
+                <option value="Aprobado por Director" selected="@(ViewBag.FiltroEstado == "Aprobado por Director")">Aprobado por Director</option>
+                <option value="En validación académica" selected="@(ViewBag.FiltroEstado == "En validación académica")">En validación académica</option>
+                <option value="Observado" selected="@(ViewBag.FiltroEstado == "Observado")">Observado</option>
+                <option value="Aprobado Final" selected="@(ViewBag.FiltroEstado == "Aprobado Final")">Aprobado Final</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-usmp w-100">Filtrar</button>
+            <a href="@Url.Action("ValidacionIndex")" class="btn btn-outline-secondary w-100">Limpiar</a>
+        </div>
+    </form>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
+                <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+            </svg>
+        </div>
+        <h3>No hay sílabos pendientes de validación</h3>
+        <p>Cuando el Director apruebe un sílabo, aparecerá aquí para su validación institucional.</p>
+    </div>
+}
+else
+{
+    <div class="table-card">
+        <div class="table-responsive">
+            <table class="table table-custom">
+                <thead>
+                    <tr>
+                        <th>Curso</th>
+                        <th>Docente</th>
+                        <th>Director aprobador</th>
+                        <th>Fecha aprobación</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="fw-semibold">@s.Curso?.Nombre</span>
+                                <div class="text-muted" style="font-size:0.8rem;">@s.EscuelaProfesional</div>
+                            </td>
+                            <td>@s.DocenteResponsable</td>
+                            <td>@(string.IsNullOrEmpty(s.AprobadoPor) ? "—" : s.AprobadoPor)</td>
+                            <td>@(s.FechaAprobacion.HasValue ? s.FechaAprobacion.Value.ToString("dd/MM/yyyy HH:mm") : "—")</td>
+                            <td>
+                                @{
+                                    var estadoClass = s.Estado switch
+                                    {
+                                        "Aprobado por Director" => "badge-revision",
+                                        "En validación académica" => "badge-revision",
+                                        "Observado" => "badge-corregir",
+                                        "Aprobado Final" => "badge-aprobado",
+                                        _ => "badge-edicion"
+                                    };
+                                }
+                                <span class="status-badge @estadoClass">@s.Estado</span>
+                            </td>
+                            <td>
+                                @if (s.Estado != "Aprobado Final")
+                                {
+                                    <a href="@Url.Action("DetalleValidacion", new { id = s.Id })"
+                                       class="btn btn-usmp btn-sm">Revisar</a>
+                                }
+                                else
+                                {
+                                    <div class="d-flex gap-2">
+                                        <a href="@Url.Action("DetalleValidacion", new { id = s.Id })"
+                                           class="btn btn-outline-secondary btn-sm">Ver detalle</a>
+                                        <form asp-action="ReabrirEdicionRevisor" method="post" onsubmit="return confirm('¿Está seguro de habilitar la edición? El sílabo regresará al inicio (En edición).');">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@s.Id" />
+                                            <button type="submit" class="btn btn-usmp-outline btn-sm">Reabrir</button>
+                                        </form>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
