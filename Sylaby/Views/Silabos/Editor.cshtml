@@ -1,0 +1,322 @@
+@model Sylaby.Models.Silabo
+@{
+    ViewData["Title"] = "Editor de Sílabo — " + Model.Curso?.Nombre;
+    bool bloqueado = Model.Estado == "En revisión" || (Model.Estado == "Aprobado" && !Model.PermiteNuevasPropuestas);
+    bool puedeEnviar = Model.Estado == "En edición" || Model.Estado == "Por corregir";
+
+    // Secciones con observaciones del director
+    var obsDict = Model.Observaciones
+        .GroupBy(o => o.SeccionObservada)
+        .ToDictionary(g => g.Key, g => g.ToList());
+}
+
+<div class="dashboard-container" style="max-width: 900px;">
+
+    <!-- Breadcrumb -->
+    <a asp-controller="Silabos" asp-action="DocenteIndex" class="d-inline-flex align-items-center gap-2 mb-4 text-decoration-none" style="color: var(--usmp-red); font-weight: 600;">
+        Volver a Mis Sílabos
+    </a>
+
+    <!-- Header -->
+    <div class="silabo-editor-header mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="silabo-editor-title">@Model.Curso?.Nombre</h1>
+                <p class="silabo-editor-sub">Sílabo académico — @Model.EscuelaProfesional</p>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-2">
+                @{
+                    string estadoClass = Model.Estado switch
+                    {
+                        "En edición" => "estado-edicion",
+                        "En revisión" => "estado-revision",
+                        "Por corregir" => "estado-corregir",
+                        "Aprobado" => "estado-aprobado",
+                        _ => "estado-default"
+                    };
+                }
+                <span class="estado-badge @estadoClass fs-6 px-3 py-2">@Model.Estado</span>
+                <small class="text-muted">Modificado: @Model.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert-success-custom mb-4">@TempData["Exito"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-error-custom mb-4">@TempData["Error"]</div>
+    }
+
+    @if (bloqueado)
+    {
+        <div class="alert-info-custom mb-4">
+            El sílabo está <strong>bloqueado para edición</strong> mientras se encuentra en estado "@Model.Estado".
+        </div>
+    }
+
+    <!-- Observaciones del Director (si hay) -->
+    @if (Model.Observaciones.Any() && (Model.Estado == "Por corregir" || Model.Estado == "En edición"))
+    {
+        <div class="director-obs-panel mb-4">
+            <div class="director-obs-header">
+                <span>Observaciones del Director</span>
+                <small>@Model.Observaciones.First().Fecha.ToString("dd/MM/yyyy") — @Model.Observaciones.First().DirectorEmail</small>
+            </div>
+            <div class="director-obs-body">
+                @foreach (var obs in Model.Observaciones.OrderByDescending(o => o.Fecha))
+                {
+                    <div class="director-obs-item">
+                        <strong>@obs.SeccionObservada:</strong> @obs.Comentario
+                        @if (!string.IsNullOrEmpty(obs.ComentarioGeneral))
+                        {
+                            <div class="mt-1 text-muted"><em>Comentario general: @obs.ComentarioGeneral</em></div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- FORM -->
+    <form asp-controller="Silabos" asp-action="Guardar" method="post" id="formSilabo">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" value="@Model.Id" />
+
+        <!-- NAV TABS -->
+        <ul class="silabo-tabs mb-0" id="silaboTabs" role="tablist">
+            <li><button type="button" class="silabo-tab active" data-target="tab-generales">Datos Generales</button></li>
+            <li><button type="button" class="silabo-tab" data-target="tab-sumilla">Sumilla</button></li>
+            <li><button type="button" class="silabo-tab" data-target="tab-comp">Competencias</button></li>
+            <li><button type="button" class="silabo-tab" data-target="tab-contenidos">Contenidos</button></li>
+            <li><button type="button" class="silabo-tab" data-target="tab-estrategias">Estrategias</button></li>
+            <li><button type="button" class="silabo-tab" data-target="tab-evaluacion">Evaluación</button></li>
+            <li><button type="button" class="silabo-tab" data-target="tab-biblio">Bibliografía</button></li>
+        </ul>
+
+        <div class="silabo-tab-content">
+
+            <!-- TAB: Datos Generales -->
+            <div class="silabo-tab-panel active" id="tab-generales">
+                @if (obsDict.ContainsKey("Datos Generales"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Datos Generales"].Select(o => o.Comentario))</div>
+                }
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label-custom">Escuela Profesional</label>
+                        <input type="text" name="EscuelaProfesional" value="@Model.EscuelaProfesional" class="form-control-custom" @(bloqueado ? "readonly" : "") />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Ciclo Académico</label>
+                        <input type="text" name="CicloAcademico" value="@Model.CicloAcademico" class="form-control-custom" @(bloqueado ? "readonly" : "") />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Créditos</label>
+                        <input type="number" name="Creditos" value="@Model.Creditos" class="form-control-custom" min="1" max="10" @(bloqueado ? "readonly" : "") />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Horas Semanales</label>
+                        <input type="number" name="HorasSemanales" value="@Model.HorasSemanales" class="form-control-custom" min="1" max="20" @(bloqueado ? "readonly" : "") />
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label-custom">Docente Responsable</label>
+                        <input type="text" name="DocenteResponsable" value="@Model.DocenteResponsable" class="form-control-custom" @(bloqueado ? "readonly" : "") />
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: Sumilla -->
+            <div class="silabo-tab-panel" id="tab-sumilla">
+                @if (obsDict.ContainsKey("Sumilla"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Sumilla"].Select(o => o.Comentario))</div>
+                }
+                <label class="form-label-custom">Sumilla <span class="text-danger">*</span></label>
+                <textarea name="Sumilla" class="form-control-custom silabo-textarea" rows="6" @(bloqueado ? "readonly" : "")>@Model.Sumilla</textarea>
+            </div>
+
+            <!-- TAB: Competencias -->
+            <div class="silabo-tab-panel" id="tab-comp">
+                @if (obsDict.ContainsKey("Competencias"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Competencias"].Select(o => o.Comentario))</div>
+                }
+                <div class="mb-4">
+                    <label class="form-label-custom">Competencias <span class="text-danger">*</span></label>
+                    <textarea name="Competencias" class="form-control-custom silabo-textarea" rows="5" @(bloqueado ? "readonly" : "")>@Model.Competencias</textarea>
+                </div>
+                @if (obsDict.ContainsKey("Capacidades"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Capacidades"].Select(o => o.Comentario))</div>
+                }
+                <div>
+                    <label class="form-label-custom">Capacidades <span class="text-danger">*</span></label>
+                    <textarea name="Capacidades" class="form-control-custom silabo-textarea" rows="5" @(bloqueado ? "readonly" : "")>@Model.Capacidades</textarea>
+                </div>
+            </div>
+
+            <!-- TAB: Contenidos -->
+            <div class="silabo-tab-panel" id="tab-contenidos">
+                @if (obsDict.ContainsKey("Programación de Contenidos"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Programación de Contenidos"].Select(o => o.Comentario))</div>
+                }
+                <label class="form-label-custom">Programación de Contenidos por Unidades <span class="text-danger">*</span></label>
+                <p class="text-muted mb-2" style="font-size:0.85rem;">Puedes organizar las unidades como texto libre. Ej: UNIDAD I: ..., Semana 1: ...</p>
+                <textarea name="ProgramacionContenidos" class="form-control-custom silabo-textarea" rows="14" @(bloqueado ? "readonly" : "")>@Model.ProgramacionContenidos</textarea>
+            </div>
+
+            <!-- TAB: Estrategias -->
+            <div class="silabo-tab-panel" id="tab-estrategias">
+                @if (obsDict.ContainsKey("Estrategias Didácticas"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Estrategias Didácticas"].Select(o => o.Comentario))</div>
+                }
+                <label class="form-label-custom">Estrategias Didácticas</label>
+                <textarea name="EstrategiasDiddacticas" class="form-control-custom silabo-textarea" rows="7" @(bloqueado ? "readonly" : "")>@Model.EstrategiasDiddacticas</textarea>
+            </div>
+
+            <!-- TAB: Evaluación -->
+            <div class="silabo-tab-panel" id="tab-evaluacion">
+                @if (obsDict.ContainsKey("Sistema de Evaluación"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Sistema de Evaluación"].Select(o => o.Comentario))</div>
+                }
+                <label class="form-label-custom">Sistema de Evaluación</label>
+                <textarea name="SistemaEvaluacion" class="form-control-custom silabo-textarea" rows="7" @(bloqueado ? "readonly" : "")>@Model.SistemaEvaluacion</textarea>
+            </div>
+
+            <!-- TAB: Bibliografía -->
+            <div class="silabo-tab-panel" id="tab-biblio">
+                @if (obsDict.ContainsKey("Bibliografía"))
+                {
+                    <div class="obs-inline">@string.Join(" / ", obsDict["Bibliografía"].Select(o => o.Comentario))</div>
+                }
+                <label class="form-label-custom">Bibliografía</label>
+                <textarea name="Bibliografia" class="form-control-custom silabo-textarea" rows="7" @(bloqueado ? "readonly" : "")>@Model.Bibliografia</textarea>
+            </div>
+
+        </div><!-- end tab-content -->
+
+        <!-- ACTION BUTTONS -->
+        @if (!bloqueado)
+        {
+            <div class="silabo-actions mt-4">
+                <button type="submit" class="btn btn-usmp-outline" id="btnGuardar">
+                    Guardar Borrador
+                </button>
+                @if (puedeEnviar)
+                {
+                    <button type="button" class="btn btn-usmp-primary" id="btnEnviarRevision">
+                        Enviar a Revisión
+                    </button>
+                }
+            </div>
+        }
+    </form>
+
+    <!-- ENVIAR A REVISION FORM (separate to avoid nesting) -->
+    @if (!bloqueado && puedeEnviar)
+    {
+        <form id="formEnviar" asp-controller="Silabos" asp-action="EnviarRevision" method="post" style="display:none;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" value="@Model.Id" />
+        </form>
+    }
+
+    <!-- ── PROPUESTAS DE MEJORA ────────────────────────────────────── -->
+    <div class="propuestas-section mt-5">
+        <div class="propuestas-header">
+            <h2 class="propuestas-title">Propuestas de Mejora</h2>
+            <span class="propuestas-count">@Model.Propuestas.Count propuesta(s) registrada(s)</span>
+        </div>
+
+        @if (!Model.Propuestas.Any())
+        {
+            <p class="text-muted mt-3">Aún no hay propuestas registradas.</p>
+        }
+        else
+        {
+            <div class="propuestas-lista mt-3">
+                @foreach (var prop in Model.Propuestas.OrderByDescending(p => p.Fecha))
+                {
+                    <div class="propuesta-item">
+                        <div class="propuesta-item-header">
+                            <span class="propuesta-seccion">@prop.SeccionAfectada</span>
+                            <small class="text-muted">@prop.Fecha.ToString("dd/MM/yyyy") — @prop.Hora — @prop.Autor</small>
+                        </div>
+                        <p class="propuesta-texto"><strong>Propuesta:</strong> @prop.PropuestaActualizacion</p>
+                        <p class="propuesta-justificacion"><strong>Justificación:</strong> @prop.Justificacion</p>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Formulario de nueva propuesta -->
+        @if (!bloqueado)
+        {
+            <div class="propuesta-nueva mt-4">
+                <h3 class="propuesta-nueva-title">Nueva Propuesta</h3>
+                <form asp-controller="Silabos" asp-action="AgregarPropuesta" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="silaboId" value="@Model.Id" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label-custom">Sección Afectada <span class="text-danger">*</span></label>
+                            <select name="seccionAfectada" class="form-control-custom">
+                                <option value="">— Seleccionar —</option>
+                                <option>Datos Generales</option>
+                                <option>Sumilla</option>
+                                <option>Competencias</option>
+                                <option>Capacidades</option>
+                                <option>Programación de Contenidos</option>
+                                <option>Estrategias Didácticas</option>
+                                <option>Sistema de Evaluación</option>
+                                <option>Bibliografía</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label-custom">Propuesta de Actualización <span class="text-danger">*</span></label>
+                            <input type="text" name="propuestaActualizacion" class="form-control-custom" placeholder="Describe la propuesta de mejora..." />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-custom">Justificación <span class="text-danger">*</span></label>
+                            <textarea name="justificacion" class="form-control-custom" rows="3" placeholder="¿Por qué propones este cambio?"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" class="btn btn-usmp-secondary">Agregar Propuesta</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        }
+    </div><!-- end propuestas-section -->
+
+</div><!-- end dashboard-container -->
+
+@section Scripts {
+<script>
+    // Tab switching
+    document.querySelectorAll('.silabo-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.silabo-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.silabo-tab-panel').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById(this.dataset.target).classList.add('active');
+        });
+    });
+
+    // Enviar a revisión
+    const btnEnviar = document.getElementById('btnEnviarRevision');
+    if (btnEnviar) {
+        btnEnviar.addEventListener('click', function () {
+            if (confirm('¿Estás seguro de enviar este sílabo a revisión? Una vez enviado, no podrás editarlo hasta recibir respuesta del Director.')) {
+                document.getElementById('formEnviar').submit();
+            }
+        });
+    }
+</script>
+}

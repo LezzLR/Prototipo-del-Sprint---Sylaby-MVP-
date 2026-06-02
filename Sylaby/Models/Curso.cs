@@ -19,5 +19,8 @@ namespace Sylaby.Models
 
         // Navigation property to access course survey
         public ICollection<EncuestaCierreCiclo> Encuestas { get; set; } = new List<EncuestaCierreCiclo>();
+
+        // Navigation property to access syllabus
+        public ICollection<Silabo> Silabos { get; set; } = new List<Silabo>();
     }
 }

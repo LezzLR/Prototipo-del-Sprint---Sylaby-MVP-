@@ -556,3 +556,501 @@ footer {
         opacity: 1;
     }
 }
+
+/* ==========================================================================
+   Módulo de Gestión de Sílabos (Docente y Director)
+   ========================================================================== */
+
+/* Silabo Card */
+.silabo-card {
+    background-color: var(--usmp-card-bg);
+    border: 1px solid var(--usmp-border);
+    border-radius: 16px;
+    box-shadow: var(--usmp-shadow);
+    transition: var(--usmp-transition);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.silabo-card:hover {
+    box-shadow: var(--usmp-shadow-lg);
+    border-color: #CBD5E1;
+    transform: translateY(-2px);
+}
+
+.silabo-card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--usmp-border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: rgba(248, 250, 252, 0.5);
+}
+
+.silabo-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background-color: var(--usmp-red-light);
+    color: var(--usmp-red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(178, 34, 34, 0.1);
+}
+
+.silabo-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--usmp-text-primary);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+}
+
+.silabo-meta {
+    font-size: 0.8rem;
+    color: var(--usmp-text-secondary);
+    margin: 0;
+}
+
+.silabo-card-body {
+    padding: 1.5rem;
+    flex-grow: 1;
+}
+
+.silabo-info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--usmp-border);
+    font-size: 0.9rem;
+}
+
+.silabo-info-row:last-child {
+    border-bottom: none;
+}
+
+.silabo-info-label {
+    color: var(--usmp-text-secondary);
+    font-weight: 500;
+}
+
+.silabo-info-value {
+    color: var(--usmp-text-primary);
+    font-weight: 600;
+}
+
+.silabo-card-footer {
+    padding: 1.25rem 1.5rem;
+    background-color: rgba(248, 250, 252, 0.5);
+    border-top: 1px solid var(--usmp-border);
+}
+
+/* Status Badges */
+.estado-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.35rem 0.85rem;
+    border-radius: 9999px;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.estado-edicion {
+    background-color: #FEF3C7;
+    color: #92400E;
+    border: 1px solid #FCD34D;
+}
+
+.estado-revision {
+    background-color: #DBEAFE;
+    color: #1E40AF;
+    border: 1px solid #93C5FD;
+}
+
+.estado-corregir {
+    background-color: #FEE2E2;
+    color: #991B1B;
+    border: 1px solid #FCA5A5;
+}
+
+.estado-aprobado {
+    background-color: #D1FAE5;
+    color: #065F46;
+    border: 1px solid #6EE7B7;
+}
+
+.estado-default {
+    background-color: #F3F4F6;
+    color: #374151;
+    border: 1px solid #D1D5DB;
+}
+
+/* Editor & Detalle Header */
+.silabo-editor-header {
+    background-color: #FFFFFF;
+    border: 1px solid var(--usmp-border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--usmp-shadow);
+}
+
+.silabo-editor-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: var(--usmp-text-primary);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+}
+
+.silabo-editor-sub {
+    font-size: 0.95rem;
+    color: var(--usmp-text-secondary);
+    margin: 0;
+}
+
+/* Custom Alert Banner */
+.alert-success-custom {
+    background-color: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    color: #065F46;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.alert-error-custom {
+    background-color: #FFF5F5;
+    border: 1px solid #FEB2B2;
+    color: #C53030;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.alert-info-custom {
+    background-color: #F0F9FF;
+    border: 1px solid #BAE6FD;
+    color: #0369A1;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+/* Inline Observation */
+.obs-inline {
+    background-color: #FFF5F5;
+    border-left: 4px solid var(--usmp-red);
+    color: #C53030;
+    padding: 0.75rem 1rem;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* Tabs */
+.silabo-tabs {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-bottom: 2px solid var(--usmp-border);
+    overflow-x: auto;
+    white-space: nowrap;
+    gap: 0.5rem;
+}
+
+.silabo-tabs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.silabo-tab {
+    background: none;
+    border: none;
+    padding: 0.85rem 1.25rem;
+    font-size: 0.925rem;
+    font-weight: 600;
+    color: var(--usmp-text-secondary);
+    position: relative;
+    transition: var(--usmp-transition);
+}
+
+.silabo-tab:hover {
+    color: var(--usmp-red);
+}
+
+.silabo-tab.active {
+    color: var(--usmp-red);
+}
+
+.silabo-tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--usmp-red);
+}
+
+.silabo-tab-content {
+    background-color: #FFFFFF;
+    border: 1px solid var(--usmp-border);
+    border-top: none;
+    border-radius: 0 0 16px 16px;
+    padding: 2rem;
+    box-shadow: var(--usmp-shadow);
+    margin-bottom: 2rem;
+}
+
+.silabo-tab-panel {
+    display: none;
+}
+
+.silabo-tab-panel.active {
+    display: block;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.silabo-textarea {
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.text-pre-wrap {
+    white-space: pre-wrap;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--usmp-text-primary);
+}
+
+/* Actions panel */
+.silabo-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Director Observation Panel (Docente view) */
+.director-obs-panel {
+    background-color: #FFF5F5;
+    border: 1px solid #FEB2B2;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.director-obs-header {
+    background-color: #FED7D7;
+    color: #9B2C2C;
+    padding: 0.75rem 1.25rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #FEB2B2;
+}
+
+.director-obs-body {
+    padding: 1.25rem;
+}
+
+.director-obs-item {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px dashed #FEB2B2;
+    margin-bottom: 0.75rem;
+    font-size: 0.925rem;
+}
+
+.director-obs-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* Propuestas de Mejora Section */
+.propuestas-section {
+    background-color: #FFFFFF;
+    border: 1px solid var(--usmp-border);
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: var(--usmp-shadow);
+}
+
+.propuestas-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1.5px solid var(--usmp-border);
+    padding-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.propuestas-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--usmp-text-primary);
+    margin: 0;
+}
+
+.propuestas-count {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--usmp-text-secondary);
+    background-color: var(--usmp-light-bg);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+}
+
+.propuestas-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.propuesta-item {
+    background-color: var(--usmp-light-bg);
+    border: 1px solid var(--usmp-border);
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: var(--usmp-transition);
+}
+
+.propuesta-item:hover {
+    border-color: #CBD5E1;
+}
+
+.propuesta-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px dashed var(--usmp-border);
+    padding-bottom: 0.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.propuesta-seccion {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--usmp-red);
+    text-transform: uppercase;
+}
+
+.propuesta-texto, .propuesta-justificacion {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.925rem;
+    line-height: 1.5;
+}
+
+.propuesta-justificacion {
+    margin-bottom: 0;
+    color: var(--usmp-text-secondary);
+    font-style: italic;
+    background-color: rgba(255, 255, 255, 0.6);
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border-left: 3px solid #CBD5E1;
+}
+
+.propuesta-nueva {
+    border-top: 1.5px solid var(--usmp-border);
+    padding-top: 1.5rem;
+}
+
+.propuesta-nueva-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--usmp-text-primary);
+    margin-bottom: 1rem;
+}
+
+/* Director Filters & Table */
+.silabo-filtros {
+    background-color: #FFFFFF;
+    border: 1px solid var(--usmp-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--usmp-shadow);
+}
+
+.silabo-tabla-wrapper {
+    background-color: #FFFFFF;
+    border: 1px solid var(--usmp-border);
+    border-radius: 16px;
+    box-shadow: var(--usmp-shadow);
+    overflow-x: auto;
+}
+
+.silabo-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.silabo-tabla th {
+    background-color: rgba(248, 250, 252, 0.8);
+    color: var(--usmp-text-secondary);
+    font-weight: 700;
+    padding: 1rem 1.25rem;
+    border-bottom: 1.5px solid var(--usmp-border);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.silabo-tabla td {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--usmp-border);
+    color: var(--usmp-text-primary);
+    font-size: 0.925rem;
+}
+
+.silabo-tabla tr:last-child td {
+    border-bottom: none;
+}
+
+.silabo-tabla tr:hover td {
+    background-color: rgba(248, 250, 252, 0.4);
+}
+
+/* Accordion observations adjustments */
+.accordion-custom .accordion-button:not(.collapsed) {
+    background-color: var(--usmp-red-light);
+    color: var(--usmp-red);
+    box-shadow: none;
+}
+
+.accordion-custom .accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(178, 34, 34, 0.2);
+}
+
+.btn-usmp-danger {
+    background-color: var(--usmp-red);
+    color: #FFFFFF;
+    font-weight: 600;
+    border: none;
+    transition: var(--usmp-transition);
+}
+
+.btn-usmp-danger:hover {
+    background-color: var(--usmp-red-dark);
+    color: #FFFFFF;
+}

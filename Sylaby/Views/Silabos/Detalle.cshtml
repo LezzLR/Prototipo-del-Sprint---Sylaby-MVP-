@@ -1,0 +1,374 @@
+@model Sylaby.Models.Silabo
+@{
+    ViewData["Title"] = "Revisión de Sílabo — " + Model.Curso?.Nombre;
+
+    // Get latest observation for each section to pre-fill if helpful, or just let them add new ones
+    var obsRecientes = Model.Observaciones
+        .GroupBy(o => o.SeccionObservada)
+        .ToDictionary(g => g.Key, g => g.OrderByDescending(o => o.Fecha).First());
+}
+
+<div class="dashboard-container" style="max-width: 1000px;">
+
+    <!-- Breadcrumb -->
+    <a asp-controller="Silabos" asp-action="DirectorIndex" class="d-inline-flex align-items-center gap-2 mb-4 text-decoration-none" style="color: var(--usmp-red); font-weight: 600;">
+        Volver a Gestión de Sílabos
+    </a>
+
+    <!-- Header -->
+    <div class="silabo-editor-header mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <span class="dashboard-tag bg-secondary text-white">Revisión de Sílabo</span>
+                <h1 class="silabo-editor-title">@Model.Curso?.Nombre</h1>
+                <p class="silabo-editor-sub">Docente Responsable: <strong>@Model.DocenteResponsable</strong></p>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-2">
+                @{
+                    string estadoClass = Model.Estado switch
+                    {
+                        "En edición" => "estado-edicion",
+                        "En revisión" => "estado-revision",
+                        "Por corregir" => "estado-corregir",
+                        "Aprobado" => "estado-aprobado",
+                        _ => "estado-default"
+                    };
+                }
+                <span class="estado-badge @estadoClass fs-6 px-3 py-2">@Model.Estado</span>
+                <small class="text-muted">Última modificación: @Model.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert-success-custom mb-4">@TempData["Exito"]</div>
+    }
+
+    <!-- Switch for allowing new updates when Approved -->
+    @if (Model.Estado == "Aprobado")
+    {
+        <div class="info-card mb-4 p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h4 class="mb-1" style="font-weight: 700; color: var(--usmp-charcoal);">Reapertura de Edición</h4>
+                <p class="text-muted mb-0" style="font-size:0.9rem;">
+                    Habilita la edición de este sílabo aprobado. Al hacerlo, el sílabo volverá al estado "En edición" para que el docente pueda realizar cambios y volver a enviarlo a revisión.
+                </p>
+            </div>
+            <form asp-controller="Silabos" asp-action="TogglePermisoEdicion" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-usmp-outline">
+                    Habilitar Edición
+                </button>
+            </form>
+        </div>
+    }
+
+    <!-- Proposals from Docente -->
+    <div class="propuestas-section mb-4">
+        <div class="propuestas-header">
+            <h3 class="propuestas-title">Propuestas de Mejora del Docente</h3>
+            <span class="propuestas-count">@Model.Propuestas.Count propuesta(s)</span>
+        </div>
+        @if (!Model.Propuestas.Any())
+        {
+            <div class="p-3 text-muted bg-light rounded mt-2">
+                El docente no ha registrado ninguna propuesta de mejora específica para este ciclo.
+            </div>
+        }
+        else
+        {
+            <div class="propuestas-lista mt-3">
+                @foreach (var prop in Model.Propuestas.OrderByDescending(p => p.Fecha))
+                {
+                    <div class="propuesta-item">
+                        <div class="propuesta-item-header">
+                            <span class="propuesta-seccion">@prop.SeccionAfectada</span>
+                            <small class="text-muted">@prop.Fecha.ToString("dd/MM/yyyy") @prop.Hora</small>
+                        </div>
+                        <p class="propuesta-texto"><strong>Cambio Propuesto:</strong> @prop.PropuestaActualizacion</p>
+                        <p class="propuesta-justificacion"><strong>Justificación:</strong> @prop.Justificacion</p>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- MAIN FORM FOR EVALUATION & OBSERVATIONS -->
+    <form id="formRevision" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+
+        <div class="row">
+            <!-- Left panel: Read-only Syllabus content -->
+            <div class="col-lg-8">
+                <div class="info-card p-4">
+                    <h3 class="card-title-custom mb-3">Contenido del Sílabo</h3>
+
+                    <!-- TABS -->
+                    <ul class="silabo-tabs mb-0" id="silaboTabs" role="tablist">
+                        <li><button type="button" class="silabo-tab active" data-target="tab-generales">Datos Generales</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-sumilla">Sumilla</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-comp">Competencias</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-contenidos">Contenidos</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-estrategias">Estrategias</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-evaluacion">Evaluación</button></li>
+                        <li><button type="button" class="silabo-tab" data-target="tab-biblio">Bibliografía</button></li>
+                    </ul>
+
+                    <div class="silabo-tab-content">
+                        <!-- TAB: Generales -->
+                        <div class="silabo-tab-panel active" id="tab-generales">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label-custom">Escuela Profesional</label>
+                                    <input type="text" class="form-control-custom" value="@Model.EscuelaProfesional" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-custom">Ciclo Académico</label>
+                                    <input type="text" class="form-control-custom" value="@Model.CicloAcademico" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-custom">Créditos</label>
+                                    <input type="text" class="form-control-custom" value="@Model.Creditos" readonly />
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label-custom">Horas Semanales</label>
+                                    <input type="text" class="form-control-custom" value="@Model.HorasSemanales" readonly />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label-custom">Docente Responsable</label>
+                                    <input type="text" class="form-control-custom" value="@Model.DocenteResponsable" readonly />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: Sumilla -->
+                        <div class="silabo-tab-panel" id="tab-sumilla">
+                            <label class="form-label-custom">Sumilla</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.Sumilla</div>
+                        </div>
+
+                        <!-- TAB: Competencias & Capacidades -->
+                        <div class="silabo-tab-panel" id="tab-comp">
+                            <label class="form-label-custom">Competencias</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap mb-3">@Model.Competencias</div>
+
+                            <label class="form-label-custom">Capacidades</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.Capacidades</div>
+                        </div>
+
+                        <!-- TAB: Contenidos -->
+                        <div class="silabo-tab-panel" id="tab-contenidos">
+                            <label class="form-label-custom">Programación de Contenidos por Unidades</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.ProgramacionContenidos</div>
+                        </div>
+
+                        <!-- TAB: Estrategias -->
+                        <div class="silabo-tab-panel" id="tab-estrategias">
+                            <label class="form-label-custom">Estrategias Didácticas</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.EstrategiasDiddacticas</div>
+                        </div>
+
+                        <!-- TAB: Evaluacion -->
+                        <div class="silabo-tab-panel" id="tab-evaluacion">
+                            <label class="form-label-custom">Sistema de Evaluación</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.SistemaEvaluacion</div>
+                        </div>
+
+                        <!-- TAB: Bibliografia -->
+                        <div class="silabo-tab-panel" id="tab-biblio">
+                            <label class="form-label-custom">Bibliografía</label>
+                            <div class="p-3 bg-light rounded text-pre-wrap">@Model.Bibliografia</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right panel: Observations & Actions -->
+            <div class="col-lg-4">
+                <div class="info-card p-4 sticky-top" style="top: 2rem; z-index: 100;">
+                    <h3 class="card-title-custom mb-3">Observaciones de Revisión</h3>
+
+                    @if (Model.Estado == "En revisión")
+                    {
+                        <p class="text-muted" style="font-size:0.85rem;">
+                            Ingresa comentarios en las secciones que consideres que requieren ajustes por parte del docente. Si todo es correcto, aprueba el sílabo.
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="form-label-custom">Comentario General</label>
+                            <textarea name="comentarioGeneral" class="form-control-custom" rows="3" placeholder="Comentario general para el docente..."></textarea>
+                        </div>
+
+                        <div class="accordion accordion-custom mb-4" id="accordionObservaciones">
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGenerales">
+                                        Observaciones de Datos Generales
+                                    </button>
+                                </h2>
+                                <div id="collapseGenerales" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsGenerales" class="form-control-custom" rows="2" placeholder="Observaciones..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSumilla">
+                                        Observaciones de Sumilla
+                                    </button>
+                                </h2>
+                                <div id="collapseSumilla" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsSumilla" class="form-control-custom" rows="2" placeholder="Observaciones..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseComp">
+                                        Observaciones de Competencias/Capacidades
+                                    </button>
+                                </h2>
+                                <div id="collapseComp" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsCompetencias" class="form-control-custom mb-2" rows="2" placeholder="Observaciones Competencias..."></textarea>
+                                        <textarea name="obsCapacidades" class="form-control-custom" rows="2" placeholder="Observaciones Capacidades..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseContenidos">
+                                        Observaciones de Contenidos
+                                    </button>
+                                </h2>
+                                <div id="collapseContenidos" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsContenidos" class="form-control-custom" rows="2" placeholder="Observaciones..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEstrategias">
+                                        Observaciones de Estrategias
+                                    </button>
+                                </h2>
+                                <div id="collapseEstrategias" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsEstrategias" class="form-control-custom" rows="2" placeholder="Observaciones..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEvaluacion">
+                                        Observaciones de Evaluación
+                                    </button>
+                                </h2>
+                                <div id="collapseEvaluacion" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsEvaluacion" class="form-control-custom" rows="2" placeholder="Observaciones..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="accordion-item border-0 mb-2">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed py-2 px-3 bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBiblio">
+                                        Observaciones de Bibliografía
+                                    </button>
+                                </h2>
+                                <div id="collapseBiblio" class="accordion-collapse collapse" data-bs-parent="#accordionObservaciones">
+                                    <div class="accordion-body p-2">
+                                        <textarea name="obsBibliografia" class="form-control-custom" rows="2" placeholder="Observaciones..."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-column gap-2">
+                            <button type="submit" asp-action="Aprobar" class="btn btn-usmp-primary w-100 py-2">
+                                Aprobar Sílabo
+                            </button>
+                            <button type="submit" asp-action="Rechazar" class="btn btn-usmp-danger w-100 py-2">
+                                Rechazar (Para corregir)
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-3 bg-light rounded text-center">
+                            <p class="mb-0 text-muted" style="font-size:0.9rem;">
+                                El sílabo no se encuentra en revisión. Su estado actual es: <strong>@Model.Estado</strong>.
+                            </p>
+                        </div>
+                        @if (Model.Observaciones.Any())
+                        {
+                            <div class="mt-4">
+                                <h5 class="form-label-custom">Observaciones guardadas:</h5>
+                                <div class="director-obs-body" style="max-height: 250px; overflow-y: auto;">
+                                    @foreach (var obs in Model.Observaciones.OrderByDescending(o => o.Fecha))
+                                    {
+                                        <div class="director-obs-item p-2 mb-2 bg-white border rounded" style="font-size: 0.85rem;">
+                                            <strong>@obs.SeccionObservada:</strong> @obs.Comentario
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- ── BITÁCORA DE ACCIONES ────────────────────────────────────── -->
+    <div class="propuestas-section mt-5">
+        <div class="propuestas-header">
+            <h3 class="propuestas-title">Historial de Cambios (Bitácora de Acciones)</h3>
+            <span class="propuestas-count">@Model.Bitacora.Count registro(s)</span>
+        </div>
+        <div class="silabo-tabla-wrapper mt-3">
+            <table class="silabo-tabla" style="font-size: 0.9rem;">
+                <thead>
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Acción Realizada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Bitacora.OrderByDescending(b => b.Fecha))
+                    {
+                        <tr>
+                            <td>@log.Fecha.ToString("dd/MM/yyyy") @log.Hora</td>
+                            <td>@log.Usuario</td>
+                            <td>@log.Rol</td>
+                            <td><strong>@log.Accion</strong></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+<script>
+    // Tab switching
+    document.querySelectorAll('.silabo-tab').forEach(tab => {
+        tab.addEventListener('click', function () {
+            document.querySelectorAll('.silabo-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.silabo-tab-panel').forEach(p => p.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById(this.dataset.target).classList.add('active');
+        });
+    });
+</script>
+}
