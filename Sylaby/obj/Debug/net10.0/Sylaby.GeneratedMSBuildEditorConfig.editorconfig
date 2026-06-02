@@ -70,6 +70,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2lsYWJvc1xEZXRhbGxlLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[C:/Users/PC/OneDrive/Escritorio/PMV - Ing Software/Sylaby/Views/Silabos/DetalleValidacion.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2lsYWJvc1xEZXRhbGxlVmFsaWRhY2lvbi5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [C:/Users/PC/OneDrive/Escritorio/PMV - Ing Software/Sylaby/Views/Silabos/DirectorIndex.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2lsYWJvc1xEaXJlY3RvckluZGV4LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
@@ -80,6 +84,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [C:/Users/PC/OneDrive/Escritorio/PMV - Ing Software/Sylaby/Views/Silabos/Editor.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2lsYWJvc1xFZGl0b3IuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/PC/OneDrive/Escritorio/PMV - Ing Software/Sylaby/Views/Silabos/ValidacionIndex.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2lsYWJvc1xWYWxpZGFjaW9uSW5kZXguY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [C:/Users/PC/OneDrive/Escritorio/PMV - Ing Software/Sylaby/Views/_ViewImports.cshtml]

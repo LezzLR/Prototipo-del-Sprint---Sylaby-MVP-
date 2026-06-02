@@ -17,6 +17,7 @@ namespace Sylaby.Models
                 _ = context.PropuestasMejora.Any();
                 _ = context.ObservacionesDirector.Any();
                 _ = context.BitacoraAcciones.Any();
+                _ = context.ValidacionesAcademicas.Any();
             }
             catch (Exception)
             {
@@ -40,6 +41,15 @@ namespace Sylaby.Models
                 };
                 director.PasswordHash = passwordHasher.HashPassword(director, "1234");
                 context.Users.Add(director);
+
+                // Seed Revisor Académico (Departamento Académico)
+                var revisor = new User
+                {
+                    Email = "depaca@usmp.pe",
+                    Role = "RevisorAcademico"
+                };
+                revisor.PasswordHash = passwordHasher.HashPassword(revisor, "1234");
+                context.Users.Add(revisor);
 
                 // Seed Docentes
                 var profesor1 = new User

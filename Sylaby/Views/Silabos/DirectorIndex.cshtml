@@ -32,7 +32,7 @@
                 <label class="form-label-custom">Estado</label>
                 <select name="filtroEstado" class="form-control-custom">
                     <option value="">— Todos —</option>
-                    @foreach (var est in new[] { "En edición", "En revisión", "Por corregir", "Aprobado" })
+                    @foreach (var est in new[] { "En edición", "En revisión", "Por corregir", "Aprobado por Director", "En validación académica", "Observado", "Aprobado Final" })
                     {
                         <option value="@est" selected="@(ViewBag.FiltroEstado == est ? "selected" : null)">@est</option>
                     }
@@ -74,7 +74,10 @@
                             "En edición" => "estado-edicion",
                             "En revisión" => "estado-revision",
                             "Por corregir" => "estado-corregir",
-                            "Aprobado" => "estado-aprobado",
+                            "Aprobado por Director" => "estado-aprobado",
+                            "En validación académica" => "estado-revision",
+                            "Observado" => "estado-corregir",
+                            "Aprobado Final" => "estado-aprobado",
                             _ => "estado-default"
                         };
                         <tr>

@@ -30,8 +30,10 @@ namespace Sylaby.Models
         public string SistemaEvaluacion { get; set; } = string.Empty;
         public string Bibliografia { get; set; } = string.Empty;
 
-        // ── Estado y control de flujo ────────────────────────────────
-        // Estados: "En edición", "En revisión", "Por corregir", "Aprobado"
+        // ── Estado y control de flujo ────────────────────────────────────────────
+        // Estados: "En edición", "En revisión", "Por corregir",
+        //          "Aprobado por Director", "En validación académica",
+        //          "Observado", "Aprobado Final"
         public string Estado { get; set; } = "En edición";
         public bool PermiteNuevasPropuestas { get; set; } = false;
 
@@ -48,9 +50,14 @@ namespace Sylaby.Models
         public DateTime? FechaRechazo { get; set; }
         public string RechazadoPor { get; set; } = string.Empty;
 
+        // ── Validación Académica (Departamento Académico) ─────────────────────
+        public DateTime? FechaValidacion { get; set; }
+        public string ValidadoPor { get; set; } = string.Empty;
+
         // ── Navegación ───────────────────────────────────────────────
         public ICollection<PropuestaMejora> Propuestas { get; set; } = new List<PropuestaMejora>();
         public ICollection<ObservacionDirector> Observaciones { get; set; } = new List<ObservacionDirector>();
         public ICollection<BitacoraAccion> Bitacora { get; set; } = new List<BitacoraAccion>();
+        public ICollection<ValidacionAcademica> ValidacionesAcademicas { get; set; } = new List<ValidacionAcademica>();
     }
 }

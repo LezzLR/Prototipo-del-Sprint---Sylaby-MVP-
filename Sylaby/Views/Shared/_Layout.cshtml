@@ -51,6 +51,12 @@
                                     <a class="nav-link-custom" asp-controller="Silabos" asp-action="DirectorIndex">Gestión de Sílabos</a>
                                 </li>
                             }
+                            else if (User.IsInRole("RevisorAcademico"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link-custom" asp-controller="Silabos" asp-action="ValidacionIndex">Validación Académica</a>
+                                </li>
+                            }
                         </ul>
                         
                         <!-- Premium user tag in navbar -->
