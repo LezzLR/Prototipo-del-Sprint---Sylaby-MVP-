@@ -1,0 +1,205 @@
+@model IEnumerable<Sylaby.Models.EncuestaCierreCiclo>
+@{
+    ViewData["Title"] = "Monitoreo - Encuestas Recibidas";
+    var selectedDocente = ViewBag.SelectedDocente as string;
+    var selectedCurso = ViewBag.SelectedCurso as string;
+    var selectedEstado = ViewBag.SelectedEstado as string;
+}
+
+<div class="dashboard-container">
+    <!-- Academic Header -->
+    <div class="dashboard-hero">
+        <span class="dashboard-tag">Director de Escuela</span>
+        <h1 class="dashboard-title">Monitoreo de Cierre de Ciclo</h1>
+        <p class="dashboard-subtitle">
+            Consulte y audite los reportes de cumplimiento de sílabos presentados por la plana docente al finalizar el periodo académico.
+        </p>
+    </div>
+
+    <!-- Dynamic Filter Form Card -->
+    <div class="info-card mb-5">
+        <h3 class="h5 fw-bold mb-3" style="color: var(--usmp-dark-slate);">Filtros de Búsqueda</h3>
+        
+        <form method="get" asp-action="Director" class="row g-3 align-items-end">
+            <!-- Filter: Docente -->
+            <div class="col-md-4">
+                <label for="selectedDocente" class="form-label-custom">Docente</label>
+                <select id="selectedDocente" name="selectedDocente" class="form-control-custom" style="appearance: auto;">
+                    <option value="">-- Todos los Docentes --</option>
+                    @if (ViewBag.Docentes != null)
+                    {
+                        foreach (var doc in ViewBag.Docentes)
+                        {
+                            <!option value="@doc" @(doc == selectedDocente ? "selected" : "")>@doc</!option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Filter: Curso -->
+            <div class="col-md-3">
+                <label for="selectedCurso" class="form-label-custom">Asignatura / Curso</label>
+                <select id="selectedCurso" name="selectedCurso" class="form-control-custom" style="appearance: auto;">
+                    <option value="">-- Todas --</option>
+                    @if (ViewBag.Cursos != null)
+                    {
+                        foreach (var cur in ViewBag.Cursos)
+                        {
+                            <!option value="@cur" @(cur == selectedCurso ? "selected" : "")>@cur</!option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Filter: Estado -->
+            <div class="col-md-3">
+                <label for="selectedEstado" class="form-label-custom">Estado de Envío</label>
+                <select id="selectedEstado" name="selectedEstado" class="form-control-custom" style="appearance: auto;">
+                    <option value="">-- Todos --</option>
+                    <!option value="Borrador" @(selectedEstado == "Borrador" ? "selected" : "")>Borrador</!option>
+                    <!option value="Enviada" @(selectedEstado == "Enviada" ? "selected" : "")>Enviada</!option>
+                </select>
+            </div>
+
+            <!-- Filter Actions -->
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-usmp-primary flex-grow-1 d-flex align-items-center justify-content-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-funnel-fill" viewBox="0 0 16 16">
+                        <path d="M1.5 1.5A.5.5 0 0 1 2 1h12a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-.124.318l-3.905 4.91a1.5 1.5 0 0 0-.251.657l-.559 2.502c-.078.348-.387.59-.74.59h-.3c-.353 0-.662-.24-.74-.59L5.34 9.387a1.5 1.5 0 0 0-.251-.657L1.18 3.818A.5.5 0 0 1 1 3.5v-2z"/>
+                    </svg>
+                    Filtrar
+                </button>
+                
+                @if (!string.IsNullOrEmpty(selectedDocente) || !string.IsNullOrEmpty(selectedCurso) || !string.IsNullOrEmpty(selectedEstado))
+                {
+                    <a asp-action="Director" class="btn btn-usmp-outline d-flex align-items-center justify-content-center" title="Limpiar Filtros">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
+                            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854z"/>
+                        </svg>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <!-- Reports Table Container -->
+    <div class="info-card p-0 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table align-middle m-0" style="font-family: var(--font-inter);">
+                <thead style="background-color: var(--usmp-dark); color: #FFFFFF; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">
+                    <tr>
+                        <th class="ps-4 py-3">Curso / Asignatura</th>
+                        <th class="py-3">Docente</th>
+                        <th class="py-3">Cumplimiento</th>
+                        <th class="py-3">Fecha de Envío</th>
+                        <th class="py-3">Estado</th>
+                        <th class="pe-4 py-3 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody style="font-size: 0.925rem;">
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="text-muted">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="currentColor" class="bi bi-folder2-open mb-3" viewBox="0 0 16 16">
+                                        <path d="M1 3.5A1.5 1.5 0 0 1 2.5 2h2.764c.958 0 1.76.56 2.064 1.399l.4 1.058a.5.5 0 0 0 .467.343H14a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5v-8a.5.5 0 0 0-.353-.146L1 3.5zM2 5v6h12V5H2z"/>
+                                    </svg>
+                                    <h5 class="fw-bold m-0 text-secondary">No se encontraron encuestas registradas</h5>
+                                    <p class="m-0 text-muted small">Intente ajustar los filtros de búsqueda.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var encuesta in Model)
+                        {
+                            // Status specific colors
+                            string statusBadgeStyle = "";
+                            if (encuesta.Estado == "Borrador")
+                            {
+                                statusBadgeStyle = "background-color: #FFFBEB !important; color: #92400E !important; border: 1.5px solid #FDE68A !important;";
+                            }
+                            else
+                            {
+                                statusBadgeStyle = "background-color: #ECFDF5 !important; color: #065F46 !important; border: 1.5px solid #A7F3D0 !important;";
+                            }
+
+                            // Dynamic progress bar color
+                            string progressColorClass = "bg-danger";
+                            if (encuesta.PorcentajeCumplimiento == 100)
+                            {
+                                progressColorClass = "bg-success";
+                            }
+                            else if (encuesta.PorcentajeCumplimiento >= 80)
+                            {
+                                progressColorClass = "bg-info";
+                            }
+                            else if (encuesta.PorcentajeCumplimiento >= 50)
+                            {
+                                progressColorClass = "bg-warning";
+                            }
+
+                            <tr>
+                                <td class="ps-4 py-3 fw-bold" style="color: var(--usmp-dark-slate);">
+                                    @encuesta.Curso?.Nombre
+                                </td>
+                                <td class="py-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white" 
+                                             style="width: 32px; height: 32px; font-weight: bold; font-size: 0.8rem; background-color: var(--usmp-red);">
+                                            @(encuesta.DocenteEmail.Substring(0, 1).ToUpper())
+                                        </div>
+                                        <div>
+                                            <span class="d-block text-dark fw-semibold" style="line-height: 1.2;">Docente</span>
+                                            <span class="small text-muted">@encuesta.DocenteEmail</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3" style="width: 180px;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="flex-grow-1" style="max-width: 100px;">
+                                            <div class="progress" style="height: 6px; background-color: #E2E8F0;">
+                                                <div class="progress-bar @progressColorClass" role="progressbar" 
+                                                     style="width: @encuesta.PorcentajeCumplimiento%" 
+                                                     aria-valuenow="@encuesta.PorcentajeCumplimiento" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                        <span class="fw-bold text-dark small" style="min-width: 38px;">
+                                            @encuesta.PorcentajeCumplimiento%
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="py-3 text-muted small">
+                                    @if (encuesta.Estado == "Enviada" && encuesta.FechaEnvioDefinitivo.HasValue)
+                                    {
+                                        <span>@encuesta.FechaEnvioDefinitivo.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-italic" style="color: #94A3B8;">Sin enviar (Borrador)</span>
+                                    }
+                                </td>
+                                <td class="py-3">
+                                    <span class="info-badge m-0" style="@statusBadgeStyle; font-size: 0.75rem; padding: 0.2rem 0.6rem;">
+                                        @encuesta.Estado
+                                    </span>
+                                </td>
+                                <td class="pe-4 py-3 text-end">
+                                    <a asp-action="DirectorDetalles" asp-route-id="@encuesta.Id" class="btn btn-usmp-outline btn-sm d-inline-flex align-items-center gap-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+                                            <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5z"/>
+                                            <path d="M9 2H2v12h12V6H9V2zM0 2a2 2 0 0 1 2-2h8l4 4v10a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2z"/>
+                                        </svg>
+                                        Auditar
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

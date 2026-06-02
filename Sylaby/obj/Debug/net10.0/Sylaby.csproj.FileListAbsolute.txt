@@ -129,4 +129,4 @@ C:\Users\PC\OneDrive\Escritorio\PMV - Ing Software\Sylaby\bin\Debug\net10.0\runt
 C:\Users\PC\OneDrive\Escritorio\PMV - Ing Software\Sylaby\obj\Debug\net10.0\Sylaby.csproj.AssemblyReference.cache
 C:\Users\PC\OneDrive\Escritorio\PMV - Ing Software\Sylaby\obj\Debug\net10.0\Sylaby.sourcelink.json
 C:\Users\PC\OneDrive\Escritorio\PMV - Ing Software\Sylaby\obj\Debug\net10.0\Sylaby.csproj.Up2Date
-C:\Users\PC\OneDrive\Escritorio\PMV - Ing Software\Sylaby\obj\Debug\net10.0\compressed\5bdbjfstcy-{0}-t2kh6vikr0-t2kh6vikr0.gz
+C:\Users\PC\OneDrive\Escritorio\PMV - Ing Software\Sylaby\obj\Debug\net10.0\compressed\5bdbjfstcy-{0}-irh2j77owj-irh2j77owj.gz

@@ -1,0 +1,141 @@
+@model Sylaby.Models.EncuestaCierreCiclo
+@{
+    ViewData["Title"] = "Auditoría - " + Model.Curso?.Nombre;
+}
+
+<div class="dashboard-container" style="max-width: 800px;">
+    <!-- Back to Monitor Link -->
+    <a asp-action="Director" class="d-inline-flex align-items-center gap-2 mb-4 text-decoration-none" style="color: var(--usmp-red); font-weight: 600; transition: var(--usmp-transition);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        </svg>
+        Volver al Panel de Monitoreo
+    </a>
+
+    <!-- Header Block -->
+    <div class="info-card mb-4" style="background-color: var(--usmp-dark); color: #FFFFFF; border-left: 6px solid var(--usmp-red);">
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+            <div>
+                <span class="dashboard-tag mb-2">FICHA DE AUDITORÍA Y TRAZABILIDAD</span>
+                <h2 class="h3 fw-bold m-0" style="letter-spacing: -0.02em;">@Model.Curso?.Nombre</h2>
+            </div>
+            
+            <span class="info-badge" style="@(Model.Estado == "Enviada" ? "background-color: #ECFDF5 !important; color: #065F46 !important; border: 1.5px solid #A7F3D0 !important;" : "background-color: #FFFBEB !important; color: #92400E !important; border: 1.5px solid #FDE68A !important;")">
+                @Model.Estado
+            </span>
+        </div>
+    </div>
+
+    <!-- Main Audit Details -->
+    <div class="row g-4">
+        <!-- Compliance & Audit Summary -->
+        <div class="col-12">
+            <div class="info-card">
+                <h4 class="h5 fw-bold mb-3 border-bottom pb-2" style="color: var(--usmp-dark-slate);">Cumplimiento General del Sílabo</h4>
+                
+                <div class="row align-items-center g-3">
+                    <div class="col-sm-3 text-center text-sm-start">
+                        <span class="display-5 fw-extrabold text-dark">@Model.PorcentajeCumplimiento%</span>
+                        <div class="text-muted small">Porcentaje Real</div>
+                    </div>
+                    
+                    <div class="col-sm-9">
+                        @{
+                            string barColor = "bg-danger";
+                            if (Model.PorcentajeCumplimiento == 100) barColor = "bg-success";
+                            else if (Model.PorcentajeCumplimiento >= 80) barColor = "bg-info";
+                            else if (Model.PorcentajeCumplimiento >= 50) barColor = "bg-warning";
+                        }
+                        <div class="progress" style="height: 12px; background-color: #E2E8F0; border-radius: 6px;">
+                            <div class="progress-bar @barColor" role="progressbar" style="width: @Model.PorcentajeCumplimiento%" 
+                                 aria-valuenow="@Model.PorcentajeCumplimiento" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Topics Not Developed -->
+        <div class="col-12">
+            <div class="info-card">
+                <h4 class="h5 fw-bold mb-3 border-bottom pb-2" style="color: var(--usmp-dark-slate);">Temas no Desarrollados</h4>
+                
+                @if (Model.PorcentajeCumplimiento == 100)
+                {
+                    <div class="p-3 rounded d-flex align-items-center gap-2" style="background-color: #F0FDF4; color: #166534; border: 1px solid #BBF7D0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-bookmark-check-fill" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M2 15.5V2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v13.5a.5.5 0 0 1-.74.439L8 13.069l-5.26 2.87A.5.5 0 0 1 2 15.5zm8.854-9.646a.5.5 0 0 0-.708-.708L7.5 7.793 6.354 6.646a.5.5 0 1 0-.708.708l1.5 1.5a.5.5 0 0 0 .708 0l3-3z"/>
+                        </svg>
+                        <strong>Sílabo completado al 100%. No se registran temas no desarrollados.</strong>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 rounded border border-danger-subtle bg-light" style="font-family: var(--font-inter); line-height: 1.6; min-height: 100px; white-space: pre-wrap;">@Model.TemasNoDesarrollados</div>
+                }
+            </div>
+        </div>
+
+        <!-- Final Observations -->
+        <div class="col-12">
+            <div class="info-card">
+                <h4 class="h5 fw-bold mb-3 border-bottom pb-2" style="color: var(--usmp-dark-slate);">Observaciones Finales del Docente</h4>
+                
+                @if (string.IsNullOrWhiteSpace(Model.ObservacionesFinales))
+                {
+                    <p class="text-muted text-italic m-0">El docente no registró observaciones ni comentarios adicionales.</p>
+                }
+                else
+                {
+                    <div class="p-3 rounded bg-light border border-light-subtle" style="font-family: var(--font-inter); line-height: 1.6; white-space: pre-wrap;">@Model.ObservacionesFinales</div>
+                }
+            </div>
+        </div>
+
+        <!-- Audit & Logs Details -->
+        <div class="col-12">
+            <div class="info-card" style="background-color: var(--usmp-light-bg);">
+                <h4 class="h5 fw-bold mb-3 border-bottom pb-2" style="color: var(--usmp-dark-slate);">Historial de Auditoría Interna</h4>
+                
+                <div class="row g-3" style="font-size: 0.9rem;">
+                    <!-- Docente -->
+                    <div class="col-sm-6">
+                        <div class="text-muted">Docente</div>
+                        <strong class="text-dark">@Model.Docente?.Email</strong>
+                    </div>
+                    
+                    <!-- Correo de Auditoria -->
+                    <div class="col-sm-6">
+                        <div class="text-muted">Correo de Registro</div>
+                        <strong class="text-dark">@Model.DocenteEmail</strong>
+                    </div>
+
+                    <!-- Fecha de Creacion -->
+                    <div class="col-sm-6">
+                        <div class="text-muted">Fecha y Hora de Creación</div>
+                        <strong class="text-dark">@Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm:ss")</strong>
+                    </div>
+
+                    <!-- Fecha de Modificacion -->
+                    <div class="col-sm-6">
+                        <div class="text-muted">Última Modificación Realizada</div>
+                        <strong class="text-dark">@Model.FechaUltimaModificacion.ToString("dd/MM/yyyy HH:mm:ss")</strong>
+                    </div>
+
+                    <!-- Fecha de Envio -->
+                    <div class="col-sm-6">
+                        <div class="text-muted">Fecha y Hora de Envío Definitivo</div>
+                        @if (Model.Estado == "Enviada" && Model.FechaEnvioDefinitivo.HasValue)
+                        {
+                            <strong class="text-success">@Model.FechaEnvioDefinitivo.Value.ToString("dd/MM/yyyy HH:mm:ss")</strong>
+                        }
+                        else
+                        {
+                            <strong class="text-warning">Aún en estado de Borrador</strong>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

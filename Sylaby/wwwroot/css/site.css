@@ -37,6 +37,7 @@ main {
     flex: 1 0 auto;
 }
 
+
 footer {
     flex-shrink: 0;
     background-color: #FFFFFF;
@@ -44,7 +45,9 @@ footer {
     padding: 1.5rem 0;
     color: var(--usmp-text-secondary);
     font-size: 0.875rem;
+    margin-top: 4rem;
 }
+
 
 /* Beautiful Custom Scrollbar */
 ::-webkit-scrollbar {
@@ -297,7 +300,9 @@ footer {
     padding: 2.5rem 1.5rem;
     max-width: 1100px;
     margin: 0 auto;
+    padding-bottom: 5rem;
 }
+
 
 .dashboard-hero {
     background-color: var(--usmp-dark);
@@ -360,6 +365,7 @@ footer {
     padding: 2rem;
     box-shadow: var(--usmp-shadow);
     transition: var(--usmp-transition);
+    margin-bottom: 2rem; /* Added spacing to avoid overlap */
 }
 
 .info-card:hover {
@@ -483,7 +489,8 @@ footer {
     padding-top: 1rem;
 }
 
-/* Navigation User Card in header */
+
+
 .nav-user-info {
     display: flex;
     align-items: center;

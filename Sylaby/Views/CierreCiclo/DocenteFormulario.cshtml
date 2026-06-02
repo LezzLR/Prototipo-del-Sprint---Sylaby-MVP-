@@ -1,0 +1,199 @@
+@model Sylaby.Models.EncuestaCierreCiclo
+@{
+    ViewData["Title"] = "Formulario - Cierre de Ciclo";
+    bool isSubmitted = Model.Estado == "Enviada";
+}
+
+<div class="dashboard-container mb-5" style="max-width: 750px;">
+    <!-- Navigation Back Link -->
+    <a asp-controller="CierreCiclo" asp-action="Docente" class="d-inline-flex align-items-center gap-2 mb-4 text-decoration-none" style="color: var(--usmp-red); font-weight: 600; transition: var(--usmp-transition);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+        </svg>
+        Volver a mis cursos
+    </a>
+
+    <!-- Header Card -->
+    <div class="info-card mb-4" style="background-color: var(--usmp-dark); color: #FFFFFF; border-left: 6px solid var(--usmp-red);">
+        <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+            <div>
+                <span class="dashboard-tag mb-2">CURSO ACADÉMICO</span>
+                <h2 class="h3 fw-bold m-0" style="letter-spacing: -0.02em;">@Model.Curso?.Nombre</h2>
+            </div>
+            
+            <span class="info-badge" style="@(isSubmitted ? "background-color: #ECFDF5 !important; color: #065F46 !important; border: 1.5px solid #A7F3D0 !important;" : "background-color: #FFFBEB !important; color: #92400E !important; border: 1.5px solid #FDE68A !important;")">
+                @Model.Estado
+            </span>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="info-card">
+        @if (isSubmitted)
+        {
+            <div class="alert alert-success border-0 mb-4 p-3 d-flex align-items-center gap-3" style="background-color: #F0FDF4; color: #15803D; border-radius: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="currentColor" class="bi bi-shield-lock-fill" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 0c-.69 0-1.843.265-2.928.56-1.11.3-2.229.655-2.887.87a1.54 1.54 0 0 0-1.044 1.262c-.596 4.477.787 7.795 2.465 9.99a11.777 11.777 0 0 0 2.517 2.453c.386.273.744.482 1.048.625.28.132.581.24.829.24s.548-.108.829-.24a7.159 7.159 0 0 0 1.048-.625 11.775 11.775 0 0 0 2.517-2.453c1.678-2.195 3.061-5.513 2.465-9.99a1.54 1.54 0 0 0-1.044-1.263 20.59 20.59 0 0 0-2.887-.87C9.843.266 8.69 0 8 0zm0 5a1 1 0 0 1 1 1v2a1 1 0 0 1-2 0V6a1 1 0 0 1 1-1z"/>
+                </svg>
+                <div>
+                    <h5 class="fw-bold m-0" style="font-size: 0.95rem;">Encuesta Enviada Definitivamente</h5>
+                    <p class="m-0 small text-secondary">
+                        Registrado el @Model.FechaEnvioDefinitivo?.ToString("dd/MM/yyyy a las HH:mm"). Este reporte está bloqueado para futuras ediciones.
+                    </p>
+                </div>
+            </div>
+        }
+
+        <form asp-action="DocenteFormulario" method="post" id="surveyForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="cursoId" value="@Model.CursoId" />
+            <input type="hidden" id="actionType" name="actionType" value="Borrador" />
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div asp-validation-summary="All" class="validation-summary-errors"></div>
+            }
+
+            <!-- Campo 1: Porcentaje de Cumplimiento -->
+            <div class="form-group-custom">
+                <label for="porcentajeCumplimiento" class="form-label-custom">
+                    Porcentaje de Cumplimiento del Sílabo <span class="text-danger">*</span>
+                </label>
+                <div class="d-flex align-items-center gap-3">
+                    <input type="number" id="porcentajeCumplimiento" name="porcentajeCumplimiento" 
+                           class="form-control-custom" style="max-width: 140px;"
+                           min="0" max="100" value="@Model.PorcentajeCumplimiento" required
+                           @(isSubmitted ? "disabled" : "") />
+                    <span class="fw-bold" style="font-size: 1.1rem; color: var(--usmp-text-secondary);">%</span>
+                    
+                    @if (!isSubmitted)
+                    {
+                        <input type="range" id="porcentajeRange" class="form-range flex-grow-1 d-none d-sm-block" 
+                               min="0" max="100" value="@Model.PorcentajeCumplimiento" 
+                               style="accent-color: var(--usmp-red);" />
+                    }
+                </div>
+                <span asp-validation-for="PorcentajeCumplimiento" class="text-danger-custom"></span>
+            </div>
+
+            <!-- Campo 2: Temas no Desarrollados -->
+            <div class="form-group-custom mt-4">
+                <label for="temasNoDesarrollados" class="form-label-custom" id="temasLabel">
+                    Temas no Desarrollados <span id="temasAsterisk" class="text-danger" style="display: none;">*</span>
+                    <span class="text-muted fw-normal d-block" style="font-size: 0.75rem; margin-top: 2px;">
+                        Obligatorio únicamente si el porcentaje de cumplimiento es menor al 100%.
+                    </span>
+                </label>
+                <textarea id="temasNoDesarrollados" name="temasNoDesarrollados" 
+                          class="form-control-custom" rows="4" placeholder="Enumere y explique brevemente los temas y unidades del sílabo que no pudieron ser desarrollados..."
+                          @(isSubmitted ? "disabled" : "")>@Model.TemasNoDesarrollados</textarea>
+                <span asp-validation-for="TemasNoDesarrollados" class="text-danger-custom"></span>
+            </div>
+
+            <!-- Campo 3: Observaciones Finales -->
+            <div class="form-group-custom mt-4">
+                <label for="observacionesFinales" class="form-label-custom">
+                    Observaciones Finales <span class="text-muted fw-normal">(Opcional)</span>
+                    <span class="text-muted fw-normal d-block" style="font-size: 0.75rem; margin-top: 2px;">
+                        Comentarios adicionales sobre el desarrollo de la asignatura, metodología o infraestructura.
+                    </span>
+                </label>
+                <textarea id="observacionesFinales" name="observacionesFinales" 
+                          class="form-control-custom" rows="3" placeholder="Registrar comentarios y sugerencias académicas..."
+                          @(isSubmitted ? "disabled" : "")>@Model.ObservacionesFinales</textarea>
+                <span asp-validation-for="ObservacionesFinales" class="text-danger-custom"></span>
+            </div>
+
+            <!-- Audit Stamps (If existing) -->
+            @if (Model.Id > 0)
+            {
+                <div class="mt-4 p-3 rounded bg-light" style="font-size: 0.8rem; color: var(--usmp-text-secondary); border: 1px solid var(--usmp-border);">
+                    <div class="row g-2">
+                        <div class="col-sm-6">
+                            <strong>Usuario:</strong> @Model.DocenteEmail
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Fecha Creación:</strong> @Model.FechaCreacion.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                        <div class="col-sm-6">
+                            <strong>Modificado:</strong> @Model.FechaUltimaModificacion.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                        @if (isSubmitted)
+                        {
+                            <div class="col-sm-6 text-success">
+                                <strong>Envío Definitivo:</strong> @Model.FechaEnvioDefinitivo?.ToString("dd/MM/yyyy HH:mm")
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Form Actions -->
+            @if (!isSubmitted)
+            {
+                <div class="mt-4 pt-3 border-top d-flex flex-column flex-sm-row justify-content-end gap-3">
+                    <button type="submit" onclick="setAction('Borrador')" class="btn btn-usmp-outline d-flex align-items-center justify-content-center gap-2 order-2 order-sm-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-bookmark-fill" viewBox="0 0 16 16">
+                            <path d="M2 2v13.5a.5.5 0 0 0 .74.439L8 13.069l5.26 2.87A.5.5 0 0 0 14 15.5V2a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/>
+                        </svg>
+                        Guardar Borrador
+                    </button>
+                    
+                    <button type="submit" onclick="setAction('Enviar')" class="btn btn-usmp-primary d-flex align-items-center justify-content-center gap-2 order-1 order-sm-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-send-fill" viewBox="0 0 16 16">
+                            <path d="M15.964.686a.5.5 0 0 0-.65-.65L.767 5.855H.766l-.452.18a.5.5 0 0 0-.082.887l.41.26.001.002 4.995 3.178 3.178 4.995.26.41a.5.5 0 0 0 .88-.083l1.88-4.655V5.855L15.964.686z"/>
+                        </svg>
+                        Enviar Definitivamente
+                    </button>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    @if (!isSubmitted)
+    {
+        <script>
+            // Set action type parameter on submit click
+            function setAction(type) {
+                document.getElementById('actionType').value = type;
+            }
+
+            // Sync range slider and numeric inputs
+            const porcentajeNum = document.getElementById('porcentajeCumplimiento');
+            const porcentajeRange = document.getElementById('porcentajeRange');
+            const temasTextarea = document.getElementById('temasNoDesarrollados');
+            const temasAsterisk = document.getElementById('temasAsterisk');
+
+            function handlePorcentajeChange(value) {
+                const pct = parseInt(value, 10);
+                
+                // Toggle topics required styling and attribute dynamically
+                if (pct < 100) {
+                    temasAsterisk.style.display = 'inline';
+                    temasTextarea.setAttribute('required', 'required');
+                } else {
+                    temasAsterisk.style.display = 'none';
+                    temasTextarea.removeAttribute('required');
+                }
+            }
+
+            // Initial trigger
+            handlePorcentajeChange(porcentajeNum.value);
+
+            // Connect event listeners
+            porcentajeNum.addEventListener('input', (e) => {
+                porcentajeRange.value = e.target.value;
+                handlePorcentajeChange(e.target.value);
+            });
+
+            porcentajeRange.addEventListener('input', (e) => {
+                porcentajeNum.value = e.target.value;
+                handlePorcentajeChange(e.target.value);
+            });
+        </script>
+    }
+}

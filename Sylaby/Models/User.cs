@@ -16,5 +16,9 @@ namespace Sylaby.Models
 
         [Required(ErrorMessage = "El rol es obligatorio.")]
         public string Role { get; set; } = string.Empty; // "Director" o "Docente"
+
+        // Bidirectional relationships for EF Core
+        public ICollection<Curso> Cursos { get; set; } = new List<Curso>();
+        public ICollection<EncuestaCierreCiclo> Encuestas { get; set; } = new List<EncuestaCierreCiclo>();
     }
 }
