@@ -20,5 +20,7 @@ namespace Sylaby.Models
         // Bidirectional relationships for EF Core
         public ICollection<Curso> Cursos { get; set; } = new List<Curso>();
         public ICollection<EncuestaCierreCiclo> Encuestas { get; set; } = new List<EncuestaCierreCiclo>();
+        public ICollection<PropuestaMejora> Propuestas { get; set; } = new List<PropuestaMejora>();
+        public ICollection<ObservacionDirector> Observaciones { get; set; } = new List<ObservacionDirector>();
     }
 }

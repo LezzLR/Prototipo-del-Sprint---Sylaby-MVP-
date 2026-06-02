@@ -1,0 +1,97 @@
+@model List<Sylaby.Models.Silabo>
+@{
+    ViewData["Title"] = "Sílabos — Revisión";
+}
+
+<div class="dashboard-container">
+
+    <!-- Hero Banner -->
+    <div class="dashboard-hero mb-4">
+        <span class="dashboard-tag">Director</span>
+        <h1 class="dashboard-title">Gestión de Sílabos</h1>
+        <p class="dashboard-subtitle">Revisa, observa, aprueba o rechaza los sílabos enviados por los docentes.</p>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert-success-custom mb-4">@TempData["Exito"]</div>
+    }
+
+    <!-- Filters -->
+    <div class="silabo-filtros mb-4">
+        <form method="get" asp-action="DirectorIndex" class="row g-2 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label-custom">Curso</label>
+                <input type="text" name="filtroCurso" value="@ViewBag.FiltroCurso" class="form-control-custom" placeholder="Buscar por curso..." />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label-custom">Docente</label>
+                <input type="text" name="filtroDocente" value="@ViewBag.FiltroDocente" class="form-control-custom" placeholder="Buscar por docente..." />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label-custom">Estado</label>
+                <select name="filtroEstado" class="form-control-custom">
+                    <option value="">— Todos —</option>
+                    @foreach (var est in new[] { "En edición", "En revisión", "Por corregir", "Aprobado" })
+                    {
+                        <option value="@est" selected="@(ViewBag.FiltroEstado == est ? "selected" : null)">@est</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-1 d-flex gap-2">
+                <button type="submit" class="btn btn-usmp-primary w-100">Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    @if (!Model.Any())
+    {
+        <div class="info-card text-center p-5">
+            <p class="text-muted">No se encontraron sílabos con los filtros aplicados.</p>
+            <a asp-action="DirectorIndex" class="btn btn-usmp-outline mt-2">Limpiar filtros</a>
+        </div>
+    }
+    else
+    {
+        <div class="silabo-tabla-wrapper">
+            <table class="silabo-tabla">
+                <thead>
+                    <tr>
+                        <th>Curso</th>
+                        <th>Docente</th>
+                        <th>Estado</th>
+                        <th>Fecha Envío</th>
+                        <th>Última Modificación</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        string estadoClass = s.Estado switch
+                        {
+                            "En edición" => "estado-edicion",
+                            "En revisión" => "estado-revision",
+                            "Por corregir" => "estado-corregir",
+                            "Aprobado" => "estado-aprobado",
+                            _ => "estado-default"
+                        };
+                        <tr>
+                            <td><strong>@s.Curso?.Nombre</strong></td>
+                            <td>@s.DocenteResponsable</td>
+                            <td><span class="estado-badge @estadoClass">@s.Estado</span></td>
+                            <td>@(s.FechaEnvio.HasValue ? s.FechaEnvio.Value.ToString("dd/MM/yyyy HH:mm") : "—")</td>
+                            <td>@s.FechaModificacion.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <a asp-controller="Silabos" asp-action="Detalle" asp-route-id="@s.Id"
+                                   class="btn btn-usmp-primary btn-sm">Ver Detalle</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+</div>

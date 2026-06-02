@@ -1,0 +1,98 @@
+@model List<Sylaby.Models.Curso>
+@{
+    ViewData["Title"] = "Mis Sílabos";
+}
+
+<div class="dashboard-container">
+
+    <!-- Hero Banner -->
+    <div class="dashboard-hero mb-4">
+        <span class="dashboard-tag">Docente</span>
+        <h1 class="dashboard-title">Mis Sílabos</h1>
+        <p class="dashboard-subtitle">Gestiona, actualiza y envía a revisión los sílabos de tus cursos asignados.</p>
+    </div>
+
+    @if (TempData["Exito"] != null)
+    {
+        <div class="alert-success-custom mb-4">
+            <span>@TempData["Exito"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-error-custom mb-4">
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="info-card text-center p-5">
+            <p class="text-muted">No tienes cursos asignados actualmente.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var curso in Model)
+            {
+                var silabo = curso.Silabos.FirstOrDefault();
+                var estado = silabo?.Estado ?? "Sin sílabo";
+                var fechaMod = silabo?.FechaModificacion.ToString("dd/MM/yyyy HH:mm") ?? "—";
+
+                string estadoClass = estado switch
+                {
+                    "En edición" => "estado-edicion",
+                    "En revisión" => "estado-revision",
+                    "Por corregir" => "estado-corregir",
+                    "Aprobado" => "estado-aprobado",
+                    _ => "estado-default"
+                };
+
+                <div class="col-md-6">
+                    <div class="silabo-card">
+                        <div class="silabo-card-header">
+                            <div>
+                                <h3 class="silabo-title">@curso.Nombre</h3>
+                                <p class="silabo-meta">Última modificación: @fechaMod</p>
+                            </div>
+                        </div>
+                        <div class="silabo-card-body">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <span class="estado-badge @estadoClass">@estado</span>
+                            </div>
+                            @if (silabo != null)
+                            {
+                                <div class="silabo-info-row">
+                                    <span class="silabo-info-label">Escuela</span>
+                                    <span class="silabo-info-value">@(string.IsNullOrEmpty(silabo.EscuelaProfesional) ? "—" : silabo.EscuelaProfesional)</span>
+                                </div>
+                                <div class="silabo-info-row">
+                                    <span class="silabo-info-label">Ciclo</span>
+                                    <span class="silabo-info-value">@(string.IsNullOrEmpty(silabo.CicloAcademico) ? "—" : silabo.CicloAcademico)</span>
+                                </div>
+                                <div class="silabo-info-row">
+                                    <span class="silabo-info-label">Créditos</span>
+                                    <span class="silabo-info-value">@silabo.Creditos</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="silabo-card-footer">
+                            @if (silabo != null)
+                            {
+                                <a asp-controller="Silabos" asp-action="Editor" asp-route-id="@silabo.Id"
+                                   class="btn btn-usmp-primary w-100">
+                                    Abrir Sílabo
+                                </a>
+                            }
+                            else
+                            {
+                                <button class="btn btn-usmp-outline w-100" disabled>Sin sílabo registrado</button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
