@@ -1,0 +1,53 @@
+@model Sylaby.Models.LoginViewModel
+@{
+    ViewData["Title"] = "Iniciar Sesión";
+}
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <h1 class="auth-logo">Sylaby<span>.</span></h1>
+            <div class="auth-subtitle">Gestión y Acreditación de Sílabos</div>
+        </div>
+        <div class="auth-card-body">
+            <h2 class="text-center h5 mb-4 fw-bold" style="color: var(--usmp-dark-slate);">Iniciar Sesión</h2>
+
+            <form asp-action="Login" method="post" autocomplete="off">
+                @Html.AntiForgeryToken()
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+                }
+
+                <div class="form-group-custom">
+                    <label asp-for="Email" class="form-label-custom">Correo Electrónico Institucional</label>
+                    <input asp-for="Email" class="form-control-custom" placeholder="ejemplo@usmp.pe" autofocus required />
+                    <span asp-validation-for="Email" class="text-danger-custom"></span>
+                </div>
+
+                <div class="form-group-custom">
+                    <label asp-for="Password" class="form-label-custom">Contraseña</label>
+                    <input asp-for="Password" type="password" class="form-control-custom" placeholder="••••••••" required />
+                    <span asp-validation-for="Password" class="text-danger-custom"></span>
+                </div>
+
+                <button type="submit" class="btn btn-usmp-primary w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                    Ingresar al Sistema
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-right-short" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"/>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="auth-switch-text">
+                ¿No tienes una cuenta? 
+                <a asp-action="Register" class="auth-switch-link">Regístrate aquí</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

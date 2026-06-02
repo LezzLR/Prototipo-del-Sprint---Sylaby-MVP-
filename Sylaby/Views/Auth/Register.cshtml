@@ -1,0 +1,74 @@
+@model Sylaby.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Registrarse";
+}
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <h1 class="auth-logo">Sylaby<span>.</span></h1>
+            <div class="auth-subtitle">Gestión y Acreditación de Sílabos</div>
+        </div>
+        <div class="auth-card-body">
+            <h2 class="text-center h5 mb-3 fw-bold" style="color: var(--usmp-dark-slate);">Registrar Nueva Cuenta</h2>
+            
+            <form asp-action="Register" method="post" autocomplete="off">
+                @Html.AntiForgeryToken()
+
+                @if (!ViewData.ModelState.IsValid)
+                {
+                    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+                }
+
+                <div class="form-group-custom">
+                    <label asp-for="Email" class="form-label-custom">
+                        Correo Electrónico Institucional
+                        <span class="text-muted d-block fw-normal mt-1" style="font-size: 0.75rem;">
+                            Debe ser del dominio <strong>@@usmp.pe</strong>
+                        </span>
+                    </label>
+                    <input asp-for="Email" class="form-control-custom" placeholder="ejemplo@usmp.pe" required />
+                    <span asp-validation-for="Email" class="text-danger-custom"></span>
+                </div>
+
+                <div class="form-group-custom">
+                    <label asp-for="Role" class="form-label-custom">Rol Académico</label>
+                    <select asp-for="Role" class="form-control-custom" style="appearance: auto;" required>
+                        <option value="Docente">Docente</option>
+                        <option value="Director">Director</option>
+                    </select>
+                    <span asp-validation-for="Role" class="text-danger-custom"></span>
+                </div>
+
+                <div class="form-group-custom">
+                    <label asp-for="Password" class="form-label-custom">Contraseña</label>
+                    <input asp-for="Password" type="password" class="form-control-custom" placeholder="Mínimo 4 caracteres" required />
+                    <span asp-validation-for="Password" class="text-danger-custom"></span>
+                </div>
+
+                <div class="form-group-custom">
+                    <label asp-for="ConfirmPassword" class="form-label-custom">Confirmar Contraseña</label>
+                    <input asp-for="ConfirmPassword" type="password" class="form-control-custom" placeholder="Repita la contraseña" required />
+                    <span asp-validation-for="ConfirmPassword" class="text-danger-custom"></span>
+                </div>
+
+                <button type="submit" class="btn btn-usmp-primary w-100 mt-3 d-flex align-items-center justify-content-center gap-2">
+                    Crear Cuenta
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-plus-fill" viewBox="0 0 16 16">
+                        <path d="M1 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                        <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="auth-switch-text">
+                ¿Ya tienes una cuenta? 
+                <a asp-action="Login" class="auth-switch-link">Inicia sesión aquí</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
