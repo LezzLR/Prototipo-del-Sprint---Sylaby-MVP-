@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Acceso Denegado";
+}
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <div class="auth-card-header">
+            <h1 class="auth-logo">Sylaby<span>.</span></h1>
+            <div class="auth-subtitle">Restricción de Acceso</div>
+        </div>
+        <div class="auth-card-body denied-card">
+            <div class="denied-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-shield-slash-fill" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M1.093 3.093c-.465.42-.75.882-.88 1.344a11.761 11.761 0 0 0 .07 5.62c.313 1.185.996 2.255 1.999 3.034a12.51 12.51 0 0 0 5.512 2.384l.21.037.21-.037a12.51 12.51 0 0 0 5.512-2.384c.728-.568 1.26-1.306 1.579-2.148L1.093 3.093zm1.904-1.904a11.51 11.51 0 0 1 5.002-1.15c.22 0 .432.006.634.019a11.51 11.51 0 0 1 5.002 1.15c.465.42.75.882.88 1.344a11.76 11.76 0 0 1-.07 5.62c-.105.4-.266.79-.48 1.157L2.997 1.189z"/>
+                </svg>
+            </div>
+            
+            <h2 class="h4 fw-bold mb-3" style="color: var(--usmp-dark-slate);">Acceso Restringido</h2>
+            <p class="text-muted mb-4" style="font-size: 0.95rem; line-height: 1.6;">
+                Lo sentimos, tu rol actual de usuario no cuenta con los privilegios necesarios para acceder a este módulo exclusivo del sistema Sylaby.
+            </p>
+            
+            <a asp-controller="Home" asp-action="Index" class="btn btn-usmp-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                Volver al Dashboard principal
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>

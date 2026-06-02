@@ -1,8 +1,84 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+@{
+    ViewData["Title"] = "Dashboard";
+    var userRole = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "Docente";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="dashboard-container">
+    <!-- Sleek academic welcome card -->
+    <div class="dashboard-hero">
+        <span class="dashboard-tag">Portal Universitario</span>
+        <h1 class="dashboard-title">Sylaby</h1>
+        <p class="dashboard-subtitle">
+            Sistema Integrado para la Creación, Modificación, Revisión y Acreditación de Sílabos Universitarios de la USMP.
+        </p>
+    </div>
+
+    <div class="row g-4">
+        <!-- User Metadata Card -->
+        <div class="col-md-6">
+            <div class="info-card h-100">
+                <div class="info-header">
+                    <div class="avatar-circle">
+                        @(User.Identity?.Name != null ? User.Identity.Name.Substring(0, 1).ToUpper() : "U")
+                    </div>
+                    <div>
+                        <h3 class="info-title">Datos del Usuario</h3>
+                        <span class="info-badge @(userRole.ToLower() == "director" ? "director" : "docente")">
+                            @userRole
+                        </span>
+                    </div>
+                </div>
+                
+                <ul class="info-list">
+                    <li class="info-list-item">
+                        <span class="info-label">Correo Institucional</span>
+                        <span class="info-value text-break">@User.Identity?.Name</span>
+                    </li>
+                    <li class="info-list-item">
+                        <span class="info-label">Rol Asignado</span>
+                        <span class="info-value">@userRole</span>
+                    </li>
+                    <li class="info-list-item">
+                        <span class="info-label">Estado de Sesión</span>
+                        <span class="info-value text-success d-flex align-items-center gap-1">
+                            <span class="d-inline-block bg-success rounded-circle" style="width: 8px; height: 8px;"></span>
+                            Activo
+                        </span>
+                    </li>
+                </ul>
+
+                <div class="pt-2">
+                    <a class="btn btn-usmp-secondary w-100 d-flex align-items-center justify-content-center gap-2" asp-controller="Auth" asp-action="Logout">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-box-arrow-right" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+                            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+                        </svg>
+                        Cerrar Sesión Activa
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Institutional Syllabus Statement Card -->
+        <div class="col-md-6">
+            <div class="message-card">
+                <div>
+                    <div class="message-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-journal-check" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M10.854 6.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 8.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+                            <path d="M3 0h10a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2zm0 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H3z"/>
+                            <path d="M1 9h14v2H1V9z"/>
+                        </svg>
+                    </div>
+                    <p class="message-text">
+                        "La calidad de la enseñanza de nuestra prestigiosa Universidad se fundamenta en la planificación estratégica de sus cátedras. A través de Sylaby, garantizamos un canal ágil y transparente para el diseño, revisión oportuna y aprobación colegiada de los sílabos académicos, promoviendo la excelencia educativa y asegurando el cumplimiento de las normativas de licenciamiento y acreditación institucional."
+                    </p>
+                </div>
+                
+                <div class="message-footer">
+                    Universidad de San Martín de Porres • Vicerrectorado Académico
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
